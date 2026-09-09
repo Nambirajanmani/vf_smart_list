@@ -1,0 +1,236 @@
+.item-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-mid);
+  animation: fadeIn 0.4s ease forwards;
+  position: relative;
+  overflow: hidden;
+}
+
+.item-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity var(--transition-mid);
+  pointer-events: none;
+}
+
+.item-card.vegetable::before {
+  background: radial-gradient(circle at top right, rgba(34,197,94,0.08) 0%, transparent 70%);
+}
+.item-card.fruit::before {
+  background: radial-gradient(circle at top right, rgba(249,115,22,0.08) 0%, transparent 70%);
+}
+
+.item-card:hover::before { opacity: 1; }
+
+.item-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Selected state (has quantity) */
+.item-card--selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), var(--shadow-glow);
+  background: rgba(34,197,94,0.05);
+}
+.item-card--selected.fruit {
+  border-color: var(--fruit-accent);
+  box-shadow: 0 0 0 1px var(--fruit-accent), 0 0 20px var(--fruit-glow);
+  background: rgba(249,115,22,0.05);
+}
+
+/* Selected Badge */
+.selected-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  box-shadow: 0 2px 8px var(--accent-glow);
+  letter-spacing: 0.3px;
+  z-index: 2;
+}
+
+.item-card.fruit .selected-badge {
+  background: linear-gradient(135deg, var(--fruit-accent), #ea580c);
+  box-shadow: 0 2px 8px var(--fruit-glow);
+}
+
+/* Emoji */
+.item-emoji {
+  font-size: 2.6rem;
+  text-align: center;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4));
+  margin-top: var(--space-xs);
+  margin-bottom: var(--space-xs);
+  transition: transform var(--transition-mid);
+}
+.item-card:hover .item-emoji { transform: scale(1.1); }
+
+/* Info row */
+.item-info {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+
+.item-names {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+}
+
+.item-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.item-name-ta {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--accent);
+  letter-spacing: 0.2px;
+}
+
+.item-card.fruit .item-name-ta {
+  color: var(--fruit-accent);
+}
+
+/* KG Controls */
+.item-kg-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.kg-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.kg-stepper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  padding: 3px;
+  transition: border-color var(--transition-fast);
+}
+
+.item-card--selected .kg-stepper {
+  border-color: rgba(34,197,94,0.4);
+}
+.item-card--selected.fruit .kg-stepper {
+  border-color: rgba(249,115,22,0.4);
+}
+
+.stepper-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: rgba(255,255,255,0.08);
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.stepper-btn:hover:not(:disabled) {
+  background: var(--accent);
+  color: #fff;
+}
+
+.stepper-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.kg-input-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.kg-input {
+  width: 55px;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-family: 'Outfit', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: center;
+}
+.kg-input::-webkit-outer-spin-button,
+.kg-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+.kg-unit {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* Presets */
+.kg-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.preset-btn {
+  flex: 1;
+  padding: 4px 0;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.03);
+  color: var(--text-muted);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.preset-btn:hover {
+  background: rgba(255,255,255,0.08);
+  color: var(--text-primary);
+}
+
+.preset-btn--active {
+  background: rgba(34,197,94,0.2);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.item-card.fruit .preset-btn--active {
+  background: rgba(249,115,22,0.2);
+  border-color: var(--fruit-accent);
+  color: var(--fruit-accent);
+}
