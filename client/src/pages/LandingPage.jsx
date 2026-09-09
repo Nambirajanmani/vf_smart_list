@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import Navbar    from '../components/Navbar.jsx';
-import ItemCard  from '../components/ItemCard.jsx';
-import { fetchPublicItems } from '../api/api.js';
+import Navbar        from '../components/Navbar.jsx';
+import ItemCard      from '../components/ItemCard.jsx';
+import UserAuthModal from '../components/UserAuthModal.jsx';
+import HistoryModal  from '../components/HistoryModal.jsx';
+import { fetchPublicItems, saveHistory } from '../api/api.js';
 import { formatKgFraction } from '../utils/formatKg.js';
 import './LandingPage.css';
 
@@ -20,6 +22,16 @@ export default function LandingPage() {
   const [quantities,  setQuantities]  = useState({}); // { [id]: kg }
   const [copySuccess, setCopySuccess] = useState(false);
 
+  // User Auth & History states
+  const [user, setUser] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('vf_user_data')); }
+    catch { return null; }
+  });
+  const [showAuthModal, setShowAuthModal]       = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [saveSuccess, setSaveSuccess]           = useState(false);
+  const [savingHistory, setSavingHistory]       = useState(false);
+
   // Fetch items when tab changes
   useEffect(() => {
     setLoading(true);
@@ -29,6 +41,44 @@ export default function LandingPage() {
       .then(data => { setItems(data); setLoading(false); })
       .catch(() => { setError('Failed to load items. Is the server running?'); setLoading(false); });
   }, [activeTab]);
+
+  // Logout handler
+  const handleUserLogout = () => {
+    localStorage.removeItem('vf_user_token');
+    localStorage.removeItem('vf_user_data');
+    setUser(null);
+  };
+
+  // Save current selection to backend history
+  const handleSaveToHistory = async () => {
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+    if (selectedItems.length === 0) return;
+
+    setSavingHistory(true);
+    try {
+      await saveHistory(selectedItems);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2500);
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to save to history.');
+    } finally {
+      setSavingHistory(false);
+    }
+  };
+
+  // Reload past selection from history modal
+  const handleReloadListFromHistory = (itemsList) => {
+    const newQty = {};
+    itemsList.forEach(item => {
+      if (item.id && item.kg > 0) {
+        newQty[item.id] = item.kg;
+      }
+    });
+    setQuantities(newQty);
+  };
 
   // Update quantity for an item
   const handleQtyChange = useCallback((id, kg) => {
@@ -290,7 +340,12 @@ export default function LandingPage() {
 
   return (
     <div className="landing-page">
-      <Navbar />
+      <Navbar
+        user={user}
+        onOpenAuth={() => setShowAuthModal(true)}
+        onOpenHistory={() => setShowHistoryModal(true)}
+        onLogout={handleUserLogout}
+      />
 
       {/* ── Hero Section ── */}
       <section className="hero">
@@ -325,6 +380,14 @@ export default function LandingPage() {
               </div>
 
               <div className="selected-list-actions">
+                <button
+                  className={`btn ${saveSuccess ? 'btn-success' : 'btn-primary'} btn-sm`}
+                  onClick={handleSaveToHistory}
+                  disabled={savingHistory}
+                  title="Save this shopping selection to your account history"
+                >
+                  {savingHistory ? '⏳ Saving...' : saveSuccess ? '✅ Saved to History!' : '💾 Save to History'}
+                </button>
                 <button
                   className="btn btn-primary btn-sm"
                   onClick={handleDownloadImage}
@@ -473,6 +536,13 @@ export default function LandingPage() {
 
             <div className="total-bar-actions">
               <button
+                className={`btn ${saveSuccess ? 'btn-success' : 'btn-primary'}`}
+                onClick={handleSaveToHistory}
+                disabled={savingHistory}
+              >
+                {savingHistory ? '⏳ Saving...' : saveSuccess ? '✅ Saved!' : '💾 Save to History'}
+              </button>
+              <button
                 className="btn btn-primary"
                 onClick={handleDownloadImage}
               >
@@ -494,6 +564,25 @@ export default function LandingPage() {
           </div>
         </div>
       )}
+
+      {/* Modals */}
+      {showAuthModal && (
+        <UserAuthModal
+          onClose={() => setShowAuthModal(false)}
+          onSuccess={(loggedUser) => {
+            setUser(loggedUser);
+            setShowAuthModal(false);
+          }}
+        />
+      )}
+
+      {showHistoryModal && (
+        <HistoryModal
+          onClose={() => setShowHistoryModal(false)}
+          onReloadList={handleReloadListFromHistory}
+        />
+      )}
     </div>
   );
 }
+

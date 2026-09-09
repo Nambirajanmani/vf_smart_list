@@ -9,6 +9,8 @@ const { Client } = require('pg');
 const pool     = require('./db/pool');
 const itemRoutes = require('./routes/itemRoutes');
 const authRoutes = require('./routes/authRoutes');
+const userAuthRoutes = require('./routes/userAuthRoutes');
+const historyRoutes  = require('./routes/historyRoutes');
 
 const app  = express();
 const PORT = process.env.PORT || 5001;
@@ -18,8 +20,10 @@ app.use(cors({ origin: '*' }));
 app.use(express.json());
 
 // ── Routes ───────────────────────────────────
-app.use('/api/items', itemRoutes);
-app.use('/api/auth',  authRoutes);
+app.use('/api/items',     itemRoutes);
+app.use('/api/auth',      authRoutes);
+app.use('/api/user-auth', userAuthRoutes);
+app.use('/api/history',   historyRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {

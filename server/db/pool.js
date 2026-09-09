@@ -115,6 +115,12 @@ const DEFAULT_ITEMS = [
 let memoryItems = [...DEFAULT_ITEMS];
 let memoryNextId = 75;
 
+let memoryUsers = [];
+let memoryNextUserId = 1;
+
+let memoryHistory = [];
+let memoryNextHistoryId = 1;
+
 // Smart wrapper query function
 const query = async (text, params = []) => {
   if (isDbConnected) {
@@ -129,12 +135,15 @@ const query = async (text, params = []) => {
   // Fallback SQL engine in memory
   const sql = text.trim();
 
-  // 1. SELECT COUNT(*) FROM items / admin_users
+  // 1. SELECT COUNT(*) FROM items / admin_users / users
   if (sql.toUpperCase().includes('SELECT COUNT(*) FROM ITEMS')) {
     return { rows: [{ count: memoryItems.length.toString() }] };
   }
   if (sql.toUpperCase().includes('SELECT COUNT(*) FROM ADMIN_USERS')) {
     return { rows: [{ count: '1' }] };
+  }
+  if (sql.toUpperCase().includes('SELECT COUNT(*) FROM USERS')) {
+    return { rows: [{ count: memoryUsers.length.toString() }] };
   }
 
   // 2. GET public items: SELECT * FROM items WHERE is_active = TRUE ...
@@ -248,6 +257,70 @@ const query = async (text, params = []) => {
     return { rows: [] };
   }
 
+  // 11. User Auth Queries
+  // User Registration check
+  if (sql.includes('SELECT * FROM users WHERE username = $1 OR email = $2')) {
+    const u = memoryUsers.find(x => x.username.toLowerCase() === params[0].toLowerCase() || x.email.toLowerCase() === (params[1] || '').toLowerCase());
+    return { rows: u ? [u] : [] };
+  }
+  // User Login query
+  if (sql.includes('SELECT * FROM users WHERE username = $1 OR email = $1') || sql.includes('SELECT * FROM users WHERE username = $1 OR email = $2')) {
+    const term = (params[0] || '').toLowerCase();
+    const u = memoryUsers.find(x => x.username.toLowerCase() === term || x.email.toLowerCase() === term);
+    return { rows: u ? [u] : [] };
+  }
+  // Find User by ID
+  if (sql.includes('SELECT id, username, email, created_at FROM users WHERE id = $1')) {
+    const u = memoryUsers.find(x => x.id == params[0]);
+    return { rows: u ? [{ id: u.id, username: u.username, email: u.email, created_at: u.created_at }] : [] };
+  }
+  // Insert new User
+  if (sql.startsWith('INSERT INTO users')) {
+    const newUser = {
+      id: memoryNextUserId++,
+      username: params[0],
+      email: params[1],
+      password_hash: params[2],
+      created_at: new Date().toISOString(),
+    };
+    memoryUsers.push(newUser);
+    return { rows: [{ id: newUser.id, username: newUser.username, email: newUser.email, created_at: newUser.created_at }] };
+  }
+
+  // 12. Shopping History Queries
+  // Insert History
+  if (sql.startsWith('INSERT INTO shopping_history')) {
+    let parsedItems = params[4];
+    if (typeof parsedItems === 'string') {
+      try { parsedItems = JSON.parse(parsedItems); } catch { /* ignore */ }
+    }
+    const newEntry = {
+      id: memoryNextHistoryId++,
+      user_id: params[0],
+      title: params[1] || 'Shopping List',
+      total_items: params[2] || 0,
+      total_weight: params[3] || 0,
+      items_data: parsedItems,
+      created_at: new Date().toISOString(),
+    };
+    memoryHistory.push(newEntry);
+    return { rows: [newEntry] };
+  }
+
+  // Fetch History for user
+  if (sql.includes('SELECT * FROM shopping_history WHERE user_id = $1')) {
+    const userHist = memoryHistory
+      .filter(h => h.user_id == params[0])
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    return { rows: userHist };
+  }
+
+  // Delete History entry
+  if (sql.includes('DELETE FROM shopping_history WHERE id = $1 AND user_id = $2')) {
+    memoryHistory = memoryHistory.filter(h => !(h.id == params[0] && h.user_id == params[1]));
+    return { rows: [] };
+  }
+
   return { rows: [] };
 };
 
@@ -256,3 +329,4 @@ module.exports = {
   on: (...args) => rawPool.on(...args),
   get isDbConnected() { return isDbConnected; },
 };
+
