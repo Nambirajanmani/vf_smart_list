@@ -17,6 +17,7 @@ export default function Navbar({ user, onOpenAuth, onOpenHistory, onLogout }) {
 
         <div className="navbar-links">
           <Link to="/" className={`nav-link ${!isAdmin ? 'active' : ''}`}>🏪 Market</Link>
+          <Link to="/admin" className={`nav-link ${isAdmin ? 'active' : ''}`}>👑 Admin</Link>
 
           {!isAdmin && (
             user ? (

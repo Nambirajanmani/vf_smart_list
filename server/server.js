@@ -16,7 +16,25 @@ const app  = express();
 const PORT = process.env.PORT || 5001;
 
 // ── Middleware ───────────────────────────────
-app.use(cors({ origin: '*' }));
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'https://vf-smart-list-1.onrender.com',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173'
+].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.onrender.com')) {
+      callback(null, true);
+    } else {
+      callback(null, true);
+    }
+  },
+  credentials: true
+}));
 app.use(express.json());
 
 // ── Routes ───────────────────────────────────
