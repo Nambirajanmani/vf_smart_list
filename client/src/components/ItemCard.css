@@ -299,3 +299,25 @@
   border-color: var(--fruit-accent);
   color: var(--fruit-accent);
 }
+
+@media (max-width: 600px) {
+  .item-card {
+    padding: 10px;
+  }
+  .item-emoji {
+    font-size: 2.2rem;
+  }
+  .kg-input {
+    width: 48px;
+    font-size: 0.88rem;
+  }
+  .stepper-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 1rem;
+  }
+  .preset-btn {
+    font-size: 0.68rem;
+    padding: 3px 0;
+  }
+}

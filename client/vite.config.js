@@ -7,8 +7,9 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:5001',
+        target: 'https://vf-smart-list.onrender.com',
         changeOrigin: true,
+        secure: false,
       },
     },
   },

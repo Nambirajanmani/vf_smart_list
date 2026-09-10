@@ -149,3 +149,16 @@
   gap: var(--space-xs);
   margin-top: 4px;
 }
+
+@media (max-width: 600px) {
+  .history-modal-card {
+    padding: 14px;
+    max-height: 90vh;
+  }
+  .history-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}
+

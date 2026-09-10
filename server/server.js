@@ -32,6 +32,9 @@ app.get('/api/health', (_req, res) => {
 
 // ── Auto-Create Database ─────────────────────
 async function ensureDatabaseExists() {
+  if (process.env.DATABASE_URL) {
+    return; // Cloud databases (Neon PostgreSQL) are pre-provisioned
+  }
   const dbName = process.env.DB_NAME || 'vf_smart_list';
   const client = new Client({
     host:     process.env.DB_HOST     || 'localhost',

@@ -76,3 +76,17 @@
   gap: var(--space-sm);
   margin-top: var(--space-xs);
 }
+
+@media (max-width: 600px) {
+  .user-auth-card {
+    padding: 16px;
+  }
+  .auth-actions {
+    flex-direction: column-reverse;
+  }
+  .auth-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+

@@ -2,14 +2,22 @@ const { Pool } = require('pg');
 const bcrypt   = require('bcrypt');
 require('dotenv').config();
 
-const rawPool = new Pool({
-  host:     process.env.DB_HOST     || 'localhost',
-  port:     parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME     || 'vf_smart_list',
-  user:     process.env.DB_USER     || 'postgres',
-  password: process.env.DB_PASSWORD || '',
-  connectionTimeoutMillis: 3000,
-});
+const connectionString = process.env.DATABASE_URL;
+
+const rawPool = connectionString
+  ? new Pool({
+      connectionString,
+      ssl: { rejectUnauthorized: false },
+      connectionTimeoutMillis: 10000,
+    })
+  : new Pool({
+      host:     process.env.DB_HOST     || 'localhost',
+      port:     parseInt(process.env.DB_PORT || '5432'),
+      database: process.env.DB_NAME     || 'vf_smart_list',
+      user:     process.env.DB_USER     || 'postgres',
+      password: process.env.DB_PASSWORD || '',
+      connectionTimeoutMillis: 3000,
+    });
 
 let isDbConnected = false;
 
