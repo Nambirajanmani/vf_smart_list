@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import Navbar        from '../components/Navbar.jsx';
 import ItemCard      from '../components/ItemCard.jsx';
 import UserAuthModal from '../components/UserAuthModal.jsx';
@@ -564,6 +565,12 @@ export default function LandingPage() {
           </div>
         </div>
       )}
+
+      {/* Footer */}
+      <footer className="page-footer page-container">
+        <p>© {new Date().getFullYear()} VF Smart List. Fresh Vegetables & Fruits.</p>
+        <Link to="/admin" className="admin-footer-link">🔐 Admin Portal</Link>
+      </footer>
 
       {/* Modals */}
       {showAuthModal && (
