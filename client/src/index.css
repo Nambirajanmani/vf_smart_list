@@ -253,3 +253,10 @@ a:hover { color: var(--accent-light); }
   margin: 0 auto;
   padding: 0 var(--space-lg);
 }
+
+@media (max-width: 600px) {
+  .page-container {
+    padding: 0 12px;
+  }
+}
+
