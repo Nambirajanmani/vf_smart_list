@@ -77,6 +77,7 @@
   margin-top: var(--space-xs);
 }
 
+<<<<<<< HEAD
 @media (max-width: 480px) {
   .user-auth-card {
     padding: var(--space-md);
@@ -92,6 +93,15 @@
     flex-direction: column-reverse;
   }
 
+=======
+@media (max-width: 600px) {
+  .user-auth-card {
+    padding: 16px;
+  }
+  .auth-actions {
+    flex-direction: column-reverse;
+  }
+>>>>>>> origin/master
   .auth-actions .btn {
     width: 100%;
     justify-content: center;

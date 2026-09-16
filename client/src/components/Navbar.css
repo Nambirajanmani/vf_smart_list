@@ -98,6 +98,7 @@
   margin-left: var(--space-xs);
 }
 
+<<<<<<< HEAD
 /* ── Mobile Viewport Adaptations ────────────────────────── */
 @media (max-width: 640px) {
   .navbar-inner {
@@ -116,10 +117,28 @@
     gap: 4px;
   }
 
+=======
+@media (max-width: 600px) {
+  .navbar-inner {
+    height: auto;
+    min-height: 56px;
+    padding: 8px 0;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: space-between;
+  }
+  .navbar-title {
+    font-size: 1.15rem;
+  }
+  .navbar-logo {
+    font-size: 1.5rem;
+  }
+>>>>>>> origin/master
   .nav-link {
     padding: 6px 10px;
     font-size: 0.82rem;
   }
+<<<<<<< HEAD
 
   .user-nav-group {
     margin-left: 2px;
@@ -166,3 +185,15 @@
 }
 
 
+=======
+  .user-nav-group {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .user-badge {
+    font-size: 0.75rem;
+    padding: 3px 8px;
+  }
+}
+
+>>>>>>> origin/master
