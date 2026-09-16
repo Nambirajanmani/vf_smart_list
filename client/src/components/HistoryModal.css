@@ -149,3 +149,37 @@
   gap: var(--space-xs);
   margin-top: 4px;
 }
+
+@media (max-width: 640px) {
+  .history-modal-card {
+    padding: var(--space-md);
+    border-radius: var(--radius-lg);
+    max-height: 90vh;
+  }
+
+  .history-header h2 {
+    font-size: 1.15rem;
+  }
+
+  .history-card {
+    padding: 10px;
+  }
+
+  .history-card-header {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .history-card-actions {
+    width: 100%;
+    gap: 6px;
+  }
+
+  .history-card-actions .btn {
+    flex: 1;
+    justify-content: center;
+    font-size: 0.76rem;
+    padding: 6px 4px;
+  }
+}
+

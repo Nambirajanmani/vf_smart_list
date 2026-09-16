@@ -153,6 +153,21 @@
   background: rgba(249,115,22,0.08);
 }
 
+.selected-item-chip.grocery {
+  border-color: rgba(167,139,250,0.4);
+  background: rgba(167,139,250,0.08);
+}
+
+.selected-item-chip.dairy {
+  border-color: rgba(56,189,248,0.4);
+  background: rgba(56,189,248,0.08);
+}
+
+.selected-item-chip.nuts {
+  border-color: rgba(245,158,11,0.4);
+  background: rgba(245,158,11,0.08);
+}
+
 .chip-emoji {
   font-size: 1.6rem;
 }
@@ -182,6 +197,18 @@
   color: var(--fruit-accent);
 }
 
+.selected-item-chip.grocery .chip-name-ta {
+  color: var(--grocery-accent);
+}
+
+.selected-item-chip.dairy .chip-name-ta {
+  color: var(--dairy-accent);
+}
+
+.selected-item-chip.nuts .chip-name-ta {
+  color: var(--nuts-accent);
+}
+
 .chip-kg {
   font-size: 0.88rem;
   font-weight: 700;
@@ -194,6 +221,21 @@
 .selected-item-chip.fruit .chip-kg {
   color: var(--fruit-accent);
   background: rgba(249,115,22,0.12);
+}
+
+.selected-item-chip.grocery .chip-kg {
+  color: var(--grocery-accent);
+  background: rgba(167,139,250,0.12);
+}
+
+.selected-item-chip.dairy .chip-kg {
+  color: var(--dairy-accent);
+  background: rgba(56,189,248,0.12);
+}
+
+.selected-item-chip.nuts .chip-kg {
+  color: var(--nuts-accent);
+  background: rgba(245,158,11,0.12);
 }
 
 .chip-controls {
@@ -310,12 +352,15 @@
 /* ── Items Grid ─────────────────────────────────────────── */
 .items-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: var(--space-md);
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
 }
 
 @media (max-width: 600px) {
-  .items-grid { grid-template-columns: repeat(2, 1fr); }
+  .items-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
   .selected-items-grid { grid-template-columns: 1fr; }
   .controls-bar { flex-direction: column; align-items: stretch; }
   .search-wrapper { min-width: unset; }

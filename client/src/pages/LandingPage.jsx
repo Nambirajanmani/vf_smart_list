@@ -4,14 +4,31 @@ import ItemCard      from '../components/ItemCard.jsx';
 import UserAuthModal from '../components/UserAuthModal.jsx';
 import HistoryModal  from '../components/HistoryModal.jsx';
 import { fetchPublicItems, saveHistory } from '../api/api.js';
-import { formatKgFraction } from '../utils/formatKg.js';
+import { formatKgFraction, formatLiters, formatItemQty } from '../utils/formatKg.js';
 import './LandingPage.css';
 
 const TABS = [
-  { key: 'all',       label: '🛒 All Catalog' },
-  { key: 'vegetable', label: '🥦 Vegetables'  },
-  { key: 'fruit',     label: '🍎 Fruits'      },
+  { key: 'all',       label: '🛒 All Catalog'       },
+  { key: 'vegetable', label: '🥦 Vegetables'        },
+  { key: 'fruit',     label: '🍎 Fruits'            },
+  { key: 'grocery',   label: '🛍️ Groceries'         },
+  { key: 'dairy',     label: '🥛 Dairy'             },
+  { key: 'nuts',      label: '🥜 Nuts & Dry Fruits' },
 ];
+
+// Clean, standard WhatsApp Brand SVG Icon
+const WhatsAppIcon = ({ size = 16, color = 'currentColor' }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill={color}
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}
+  >
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.885-9.888 9.885m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.456 5.711 1.457h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+  </svg>
+);
 
 export default function LandingPage() {
   const [items,       setItems]       = useState([]);
@@ -98,12 +115,23 @@ export default function LandingPage() {
     .filter(item => (quantities[item.id] || 0) > 0)
     .map(item => ({
       ...item,
+      qty: quantities[item.id],
       kg: quantities[item.id],
-      kgFormatted: formatKgFraction(quantities[item.id]),
+      kgFormatted: formatItemQty(quantities[item.id], item.category),
     }));
 
   const selectedCount = selectedItems.length;
-  const totalKg = selectedItems.reduce((sum, item) => sum + item.kg, 0);
+  const solidItems = selectedItems.filter(item => item.category !== 'dairy');
+  const dairyItems = selectedItems.filter(item => item.category === 'dairy');
+  const totalKg = solidItems.reduce((sum, item) => sum + item.qty, 0);
+  const totalLiters = dairyItems.reduce((sum, item) => sum + item.qty, 0);
+
+  const getSummaryQtyString = () => {
+    const parts = [];
+    if (totalKg > 0) parts.push(`⚖️ ${formatKgFraction(totalKg)}`);
+    if (totalLiters > 0) parts.push(`🥛 ${formatLiters(totalLiters)}`);
+    return parts.length > 0 ? parts.join(' • ') : '0 items';
+  };
 
   // Filter items grid by search (searches both English and Tamil names)
   const filtered = items.filter(item => {
@@ -121,7 +149,7 @@ export default function LandingPage() {
       '────────────────────────────────────────────────────────',
       ...selectedItems.map(item => `${item.emoji} ${item.name} (${item.name_ta || ''}): ${item.kgFormatted}`),
       '────────────────────────────────────────────────────────',
-      `📦 Total Items: ${selectedCount} | ⚖️ Total Weight: ${formatKgFraction(totalKg)} (${totalKg.toFixed(2)} kg)`,
+      `📦 Total Items: ${selectedCount} | ${getSummaryQtyString()}`,
     ].join('\n');
 
     navigator.clipboard.writeText(text).then(() => {
@@ -130,7 +158,37 @@ export default function LandingPage() {
     });
   };
 
-  // 2. Download Shopping List as High-Res PNG Image
+  // 2. Share Shopping List directly on WhatsApp
+  const handleShareWhatsApp = () => {
+    if (selectedItems.length === 0) return;
+    const text = [
+      '🛒 *VF Smart Shopping List / காய்கறி & பழங்கள் பட்டியல்*',
+      '──────────────────────────────',
+      ...selectedItems.map(item => `${item.emoji} *${item.name}* (${item.name_ta || ''}): *${item.kgFormatted}*`),
+      '──────────────────────────────',
+      `📦 *Total Items:* ${selectedCount} | ${getSummaryQtyString()}`,
+      '',
+      '_Shared from VF Smart List 🥬🍎_'
+    ].join('\n');
+
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  // 2b. Share Single Item on WhatsApp
+  const handleShareSingleWhatsApp = (item) => {
+    const text = [
+      '🛒 *VF Smart Shopping List*',
+      `${item.emoji} *${item.name}* (${item.name_ta || ''}): *${item.kgFormatted}*`,
+      '',
+      '_Shared from VF Smart List 🥬🍎_'
+    ].join('\n');
+
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  // 3. Download Shopping List as High-Res PNG Image
   const handleDownloadImage = () => {
     if (selectedItems.length === 0) return;
 
@@ -190,7 +248,7 @@ export default function LandingPage() {
     ctx.font = 'bold 12px "Outfit", sans-serif';
     ctx.fillText('ITEM NAME / பொருள் பெயர்', 40, 130);
     ctx.fillText('CATEGORY', 420, 130);
-    ctx.fillText('QUANTITY / எடை', width - 160, 130);
+    ctx.fillText('QUANTITY / அளவு', width - 160, 130);
 
     // Rows
     let y = 165;
@@ -218,11 +276,11 @@ export default function LandingPage() {
       }
 
       // Category
-      ctx.fillStyle = item.category === 'vegetable' ? '#22c55e' : '#f97316';
+      ctx.fillStyle = item.category === 'vegetable' ? '#22c55e' : item.category === 'fruit' ? '#f97316' : item.category === 'dairy' ? '#38bdf8' : item.category === 'nuts' ? '#f59e0b' : '#a78bfa';
       ctx.font = 'bold 12px "Outfit", sans-serif';
       ctx.fillText(item.category.toUpperCase(), 420, y);
 
-      // KG Quantity with Fraction
+      // Quantity with Fraction
       ctx.fillStyle = '#4ade80';
       ctx.font = 'bold 16px "Outfit", sans-serif';
       ctx.fillText(item.kgFormatted, width - 160, y);
@@ -243,8 +301,8 @@ export default function LandingPage() {
     ctx.fillText(`Total Selected Items: ${selectedCount}`, 40, y + 30);
 
     ctx.fillStyle = '#4ade80';
-    ctx.font = 'bold 18px "Outfit", sans-serif';
-    ctx.fillText(`Total Weight: ${formatKgFraction(totalKg)}`, width - 260, y + 30);
+    ctx.font = 'bold 16px "Outfit", sans-serif';
+    ctx.fillText(getSummaryQtyString(), width - 260, y + 30);
 
     // Trigger Download
     const link = document.createElement('a');
@@ -268,7 +326,7 @@ export default function LandingPage() {
         <td style="padding: 10px 14px; font-weight: 600; font-size: 15px;">
           ${item.name} <span style="color: #16a34a; font-weight: 600; font-size: 14px;">(${item.name_ta || ''})</span>
         </td>
-        <td style="padding: 10px 14px; font-weight: bold; color: ${item.category === 'vegetable' ? '#16a34a' : '#ea580c'}; text-transform: uppercase; font-size: 12px;">
+        <td style="padding: 10px 14px; font-weight: bold; color: ${item.category === 'vegetable' ? '#16a34a' : item.category === 'fruit' ? '#ea580c' : item.category === 'dairy' ? '#0284c7' : item.category === 'nuts' ? '#d97706' : '#7c3aed'}; text-transform: uppercase; font-size: 12px;">
           ${item.category}
         </td>
         <td style="padding: 10px 14px; font-weight: bold; font-size: 16px; color: #16a34a; text-align: right;">
@@ -313,7 +371,7 @@ export default function LandingPage() {
                 <th style="width: 40px;"></th>
                 <th>Item Name / பொருள் பெயர்</th>
                 <th>Category</th>
-                <th style="text-align: right;">Quantity / எடை</th>
+                <th style="text-align: right;">Quantity / அளவு</th>
               </tr>
             </thead>
             <tbody>
@@ -323,7 +381,7 @@ export default function LandingPage() {
 
           <div class="footer">
             <div>Total Selected Items: ${selectedCount}</div>
-            <div class="footer-weight">Total Weight: ${formatKgFraction(totalKg)}</div>
+            <div class="footer-weight">${getSummaryQtyString()}</div>
           </div>
 
           <script>
@@ -375,7 +433,7 @@ export default function LandingPage() {
                   📋 My Selected List / தேர்ந்தெடுக்கப்பட்ட பட்டியல் <span className="list-count-badge">{selectedCount} Items</span>
                 </h2>
                 <p className="selected-list-sub">
-                  Total Weight / மொத்த எடை: <strong>{formatKgFraction(totalKg)}</strong> ({totalKg.toFixed(2)} kg)
+                  Total / மொத்த அளவு: <strong>{getSummaryQtyString()}</strong>
                 </p>
               </div>
 
@@ -386,35 +444,62 @@ export default function LandingPage() {
                   disabled={savingHistory}
                   title="Save this shopping selection to your account history"
                 >
-                  {savingHistory ? '⏳ Saving...' : saveSuccess ? '✅ Saved to History!' : '💾 Save to History'}
+                  {savingHistory ? '⏳ Saving...' : saveSuccess ? '✅ Saved!' : (
+                    <>
+                      <span>💾</span>
+                      <span className="btn-full">Save to History</span>
+                      <span className="btn-short">Save</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  className="btn btn-whatsapp btn-sm"
+                  onClick={handleShareWhatsApp}
+                  title="Share shopping list directly on WhatsApp"
+                >
+                  <WhatsAppIcon size={15} color="#fff" />
+                  <span className="btn-full">WhatsApp</span>
+                  <span className="btn-short">WA</span>
                 </button>
                 <button
                   className="btn btn-primary btn-sm"
                   onClick={handleDownloadImage}
                   title="Download shopping list as a PNG Image"
                 >
-                  🖼️ Image (.png)
+                  <span>🖼️</span>
+                  <span className="btn-full">Image (.png)</span>
+                  <span className="btn-short">PNG</span>
                 </button>
                 <button
                   className="btn btn-primary btn-sm"
                   onClick={handleDownloadPDF}
                   title="Save or print shopping list as a PDF document"
                 >
-                  📄 PDF (.pdf)
+                  <span>📄</span>
+                  <span className="btn-full">PDF (.pdf)</span>
+                  <span className="btn-short">PDF</span>
                 </button>
                 <button
                   className={`btn ${copySuccess ? 'btn-success' : 'btn-ghost'} btn-sm`}
                   onClick={handleCopyList}
                   title="Copy formatted text for WhatsApp or Notes"
                 >
-                  {copySuccess ? '✅ Copied!' : '📋 Copy Text'}
+                  {copySuccess ? '✅ Copied!' : (
+                    <>
+                      <span>📋</span>
+                      <span className="btn-full">Copy Text</span>
+                      <span className="btn-short">Copy</span>
+                    </>
+                  )}
                 </button>
                 <button
                   className="btn btn-danger btn-sm"
                   onClick={() => setQuantities({})}
                   title="Clear all selected items"
                 >
-                  🗑️ Clear All
+                  <span>🗑️</span>
+                  <span className="btn-full">Clear All</span>
+                  <span className="btn-short">Clear</span>
                 </button>
               </div>
             </div>
@@ -447,6 +532,14 @@ export default function LandingPage() {
                       title="Increase by 50g"
                     >
                       +
+                    </button>
+                    <button
+                      type="button"
+                      className="chip-btn chip-btn--whatsapp"
+                      onClick={() => handleShareSingleWhatsApp(item)}
+                      title={`Send ${item.name} on WhatsApp`}
+                    >
+                      <WhatsAppIcon size={12} color="#fff" />
                     </button>
                     <button
                       type="button"
@@ -531,34 +624,55 @@ export default function LandingPage() {
           <div className="total-bar-inner page-container">
             <div className="total-info">
               <span className="total-label">🛒 {selectedCount} item{selectedCount > 1 ? 's' : ''} selected</span>
-              <span className="total-hint">Total Weight: {formatKgFraction(totalKg)}</span>
+              <span className="total-hint">{getSummaryQtyString()}</span>
             </div>
 
             <div className="total-bar-actions">
               <button
-                className={`btn ${saveSuccess ? 'btn-success' : 'btn-primary'}`}
+                className={`btn ${saveSuccess ? 'btn-success' : 'btn-primary'} total-btn`}
                 onClick={handleSaveToHistory}
                 disabled={savingHistory}
+                title="Save this shopping list to history"
               >
-                {savingHistory ? '⏳ Saving...' : saveSuccess ? '✅ Saved!' : '💾 Save to History'}
+                <span>💾</span>
+                <span className="bar-btn-full">{savingHistory ? 'Saving...' : saveSuccess ? 'Saved!' : 'Save to History'}</span>
+                <span className="bar-btn-short">{savingHistory ? 'Saving...' : saveSuccess ? 'Saved!' : 'Save'}</span>
               </button>
               <button
-                className="btn btn-primary"
+                className="btn btn-whatsapp total-btn"
+                onClick={handleShareWhatsApp}
+                title="Share shopping list directly on WhatsApp"
+              >
+                <WhatsAppIcon size={15} color="#fff" />
+                <span className="bar-btn-full">WhatsApp</span>
+                <span className="bar-btn-short">WA</span>
+              </button>
+              <button
+                className="btn btn-primary total-btn"
                 onClick={handleDownloadImage}
+                title="Download as PNG image"
               >
-                🖼️ Image (.png)
+                <span>🖼️</span>
+                <span className="bar-btn-full">Image (.png)</span>
+                <span className="bar-btn-short">PNG</span>
               </button>
               <button
-                className="btn btn-primary"
+                className="btn btn-primary total-btn"
                 onClick={handleDownloadPDF}
+                title="Save as PDF"
               >
-                📄 PDF (.pdf)
+                <span>📄</span>
+                <span className="bar-btn-full">PDF (.pdf)</span>
+                <span className="bar-btn-short">PDF</span>
               </button>
               <button
-                className="btn btn-ghost"
+                className="btn btn-ghost total-btn"
                 onClick={() => setQuantities({})}
+                title="Clear selection"
               >
-                🗑️ Clear
+                <span>🗑️</span>
+                <span className="bar-btn-full">Clear</span>
+                <span className="bar-btn-short">Clear</span>
               </button>
             </div>
           </div>

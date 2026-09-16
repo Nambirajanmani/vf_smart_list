@@ -139,7 +139,7 @@
 /* ── Stats Grid ────────────────────────────────────────────── */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: var(--space-md);
   margin-bottom: var(--space-xl);
   animation: fadeIn 0.5s ease 0.1s both;
@@ -283,8 +283,39 @@
 }
 
 @media (max-width: 600px) {
-  .admin-header { flex-direction: column; align-items: flex-start; }
-  .admin-filters { flex-direction: column; align-items: stretch; }
-  .search-wrapper { min-width: unset; }
-  .tabs { flex-wrap: wrap; }
+  .admin-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .admin-header-actions {
+    display: flex;
+    width: 100%;
+    gap: 6px;
+  }
+  .admin-header-actions .btn {
+    flex: 1;
+    justify-content: center;
+    font-size: 0.8rem;
+    padding: 8px 6px;
+  }
+  .admin-filters {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .search-wrapper { min-width: unset; width: 100%; }
+  .tabs {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tab-btn {
+    flex: 1;
+    text-align: center;
+    padding: 8px 10px;
+    font-size: 0.82rem;
+  }
 }
+

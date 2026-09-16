@@ -74,6 +74,24 @@
   color: var(--fruit-accent);
 }
 
+.cat-btn--active.grocery {
+  background: rgba(167,139,250,0.15);
+  border-color: var(--grocery-accent);
+  color: var(--grocery-accent);
+}
+
+.cat-btn--active.dairy {
+  background: rgba(56,189,248,0.15);
+  border-color: var(--dairy-accent);
+  color: var(--dairy-accent);
+}
+
+.cat-btn--active.nuts {
+  background: rgba(245,158,11,0.15);
+  border-color: var(--nuts-accent);
+  color: var(--nuts-accent);
+}
+
 /* Emoji Grid */
 .emoji-grid {
   display: flex;
@@ -184,3 +202,26 @@
   justify-content: flex-end;
   margin-top: var(--space-sm);
 }
+
+@media (max-width: 480px) {
+  .modal-box {
+    padding: var(--space-md);
+    border-radius: var(--radius-lg);
+  }
+
+  .emoji-btn {
+    width: 35px;
+    height: 35px;
+    font-size: 1.15rem;
+  }
+
+  .modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .modal-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+

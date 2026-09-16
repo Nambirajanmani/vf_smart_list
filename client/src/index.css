@@ -25,6 +25,15 @@
   --fruit-accent:    #f97316;
   --fruit-glow:      rgba(249,115,22,0.20);
 
+  --grocery-accent:  #a78bfa;
+  --grocery-glow:    rgba(167,139,250,0.20);
+
+  --dairy-accent:    #38bdf8;
+  --dairy-glow:      rgba(56,189,248,0.20);
+
+  --nuts-accent:     #f59e0b;
+  --nuts-glow:       rgba(245,158,11,0.20);
+
   --text-primary:    #f0fdf4;
   --text-secondary:  #86efac;
   --text-muted:      #4b7a5a;
@@ -203,6 +212,21 @@ a:hover { color: var(--accent-light); }
   color: var(--fruit-accent);
   border: 1px solid rgba(249,115,22,0.3);
 }
+.badge-grocery {
+  background: rgba(167,139,250,0.15);
+  color: var(--grocery-accent);
+  border: 1px solid rgba(167,139,250,0.3);
+}
+.badge-dairy {
+  background: rgba(56,189,248,0.15);
+  color: var(--dairy-accent);
+  border: 1px solid rgba(56,189,248,0.3);
+}
+.badge-nuts {
+  background: rgba(245,158,11,0.15);
+  color: var(--nuts-accent);
+  border: 1px solid rgba(245,158,11,0.3);
+}
 .badge-active   { background: rgba(34,197,94,0.15);  color: var(--success); }
 .badge-inactive { background: rgba(239,68,68,0.15); color: var(--danger); }
 
@@ -248,8 +272,19 @@ a:hover { color: var(--accent-light); }
 .slide-down { animation: slideDown 0.3s ease forwards; }
 
 /* ── Page Container ────────────────────────────────────────── */
+:root {
+  --page-pad: var(--space-lg);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (max-width: 640px) {
+  :root {
+    --page-pad: 12px;
+  }
+}
+
 .page-container {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 0 var(--space-lg);
+  padding: 0 var(--page-pad);
 }

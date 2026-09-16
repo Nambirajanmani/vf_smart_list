@@ -1,227 +1,246 @@
 import { useState, useEffect } from 'react';
-import { formatKgFraction } from '../utils/formatKg.js';
+import { formatItemQty } from '../utils/formatKg.js';
 import './ItemCard.css';
 
 /**
- * ItemCard — Displays one vegetable/fruit with manual weight typing (kg or grams),
- * unit switcher (kg ↔ g), stepper controls & quick preset buttons.
+ * ItemCard — Compact "Small Box" Product Tile
+ * Space-efficient, modern quick-commerce style card with 1-tap add,
+ * compact stepper, inline weight/volume editing, and quick chips.
+ * Supports Liters (L / ml) for Dairy and Weight (kg / g) for solids.
  */
 export default function ItemCard({ item, value = 0, onQtyChange }) {
-  const [unit, setUnit] = useState('kg'); // 'kg' | 'g'
-  const [kgStr, setKgStr] = useState(value > 0 ? value.toString() : '');
+  const isLiquid = item.category === 'dairy';
+  const mainUnit = isLiquid ? 'L' : 'kg';
+  const subUnit  = isLiquid ? 'ml' : 'g';
 
-  // Helper to parse input string to kg value
-  const parseToKg = (strVal, currentUnit) => {
+  const [unit, setUnit] = useState(mainUnit);
+  const [valStr, setValStr] = useState(value > 0 ? value.toString() : '');
+
+  // Helper to parse input string to base (kg or L) value
+  const parseToBase = (strVal, currentUnit) => {
     const raw = parseFloat(strVal);
     if (isNaN(raw) || raw < 0) return 0;
-    const kg = currentUnit === 'g' ? raw / 1000 : raw;
-    return Math.max(0, Math.round(kg * 1000) / 1000);
+    const base = (currentUnit === 'g' || currentUnit === 'ml') ? raw / 1000 : raw;
+    return Math.max(0, Math.round(base * 1000) / 1000);
   };
 
   // Helper to format string based on target unit
-  const formatValForUnit = (valKg, targetUnit) => {
-    if (valKg <= 0) return '';
-    if (targetUnit === 'g') {
-      return (Math.round(valKg * 1000)).toString();
+  const formatValForUnit = (valBase, targetUnit) => {
+    if (valBase <= 0) return '';
+    if (targetUnit === 'g' || targetUnit === 'ml') {
+      return (Math.round(valBase * 1000)).toString();
     }
-    return valKg.toString();
+    return valBase.toString();
   };
 
-  // Keep input in sync with parent value changes (e.g. Clear All) without breaking active user typing
+  // Keep input in sync with parent value changes (e.g. Clear All)
   useEffect(() => {
-    const currentKgFromStr = parseToKg(kgStr, unit);
-    if (Math.abs(currentKgFromStr - value) > 0.0001) {
+    const currentFromStr = parseToBase(valStr, unit);
+    if (Math.abs(currentFromStr - value) > 0.0001) {
       if (value === 0) {
-        setKgStr('');
+        setValStr('');
       } else {
-        setKgStr(formatValForUnit(value, unit));
+        setValStr(formatValForUnit(value, unit));
       }
     }
   }, [value]);
 
   const handleInputChange = (e) => {
     const val = e.target.value;
-    setKgStr(val);
-    const parsedKg = parseToKg(val, unit);
-    onQtyChange(item.id, parsedKg);
+    setValStr(val);
+    const parsed = parseToBase(val, unit);
+    onQtyChange(item.id, parsed);
   };
 
-  const handleUnitToggle = (newUnit) => {
-    if (newUnit === unit) return;
-    const currentKg = parseToKg(kgStr, unit);
+  const handleUnitToggle = () => {
+    const newUnit = unit === mainUnit ? subUnit : mainUnit;
+    const current = parseToBase(valStr, unit);
     setUnit(newUnit);
-    if (currentKg > 0) {
-      setKgStr(formatValForUnit(currentKg, newUnit));
+    if (current > 0) {
+      setValStr(formatValForUnit(current, newUnit));
     } else {
-      setKgStr('');
+      setValStr('');
     }
   };
 
-  const handleStep = (deltaKg) => {
-    const currentKg = parseToKg(kgStr, unit);
-    const updatedKg = Math.max(0, Math.round((currentKg + deltaKg) * 1000) / 1000);
-    setKgStr(formatValForUnit(updatedKg, unit));
-    onQtyChange(item.id, updatedKg);
+  const handleStep = (delta) => {
+    const current = parseToBase(valStr, unit);
+    const updated = Math.max(0, Math.round((current + delta) * 1000) / 1000);
+    setValStr(formatValForUnit(updated, unit));
+    onQtyChange(item.id, updated);
   };
 
-  const setPreset = (presetKg) => {
-    const updatedKg = Math.round(presetKg * 1000) / 1000;
-    setKgStr(formatValForUnit(updatedKg, unit));
-    onQtyChange(item.id, updatedKg);
+  const setPreset = (presetBase) => {
+    const updated = Math.round(presetBase * 1000) / 1000;
+    setValStr(formatValForUnit(updated, unit));
+    onQtyChange(item.id, updated);
   };
 
   const clearInput = () => {
-    setKgStr('');
+    setValStr('');
     onQtyChange(item.id, 0);
   };
 
-  const currentKg = parseToKg(kgStr, unit);
-  const isSelected = currentKg > 0;
+  const currentVal = parseToBase(valStr, unit);
+  const isSelected = currentVal > 0;
 
   return (
     <div className={`item-card glass-card ${isSelected ? 'item-card--selected' : ''} ${item.category}`}>
-      {/* Selection Checkmark Badge with Fraction Format */}
-      {isSelected && (
-        <div className="selected-badge fade-in">
-          ✓ {formatKgFraction(currentKg)}
+      {/* Top Header Row: Emoji Thumbnail + Category Badge / Selection Badge */}
+      <div className="card-top-row">
+        <div className="item-emoji-badge">
+          {item.emoji}
         </div>
-      )}
 
-      {/* Emoji Icon */}
-      <div className="item-emoji">{item.emoji}</div>
-
-      {/* English & Tamil Names */}
-      <div className="item-info">
-        <div className="item-names">
-          <h3 className="item-name">{item.name}</h3>
-          {item.name_ta && <span className="item-name-ta">{item.name_ta}</span>}
-        </div>
-        <span className={`badge badge-${item.category}`}>{item.category}</span>
+        {isSelected ? (
+          <span className="selected-badge fade-in">
+            ✓ {formatItemQty(currentVal, item.category)}
+          </span>
+        ) : (
+          <span className={`badge badge-${item.category}`}>
+            {item.category === 'vegetable' ? 'VEG' : item.category === 'fruit' ? 'FRUIT' : item.category === 'dairy' ? 'DAIRY' : item.category === 'nuts' ? 'NUTS' : 'GROCERY'}
+          </span>
+        )}
       </div>
 
-      {/* Manual Weight Quantity Selector */}
-      <div className="item-kg-controls">
-        <div className="kg-label-row">
-          <label htmlFor={`kg-${item.id}`} className="kg-label">
-            Type Weight ({unit === 'kg' ? 'KG' : 'Grams'})
-          </label>
+      {/* Item Names (English & Tamil) */}
+      <div className="item-names">
+        <h3 className="item-name" title={item.name}>{item.name}</h3>
+        {item.name_ta && <span className="item-name-ta" title={item.name_ta}>{item.name_ta}</span>}
+      </div>
 
-          <div className="unit-toggle" title="Switch between Kilograms (kg) and Grams (g)">
+      {/* Action Area: Compact Add / Stepper Controls */}
+      <div className="card-action-area">
+        {!isSelected ? (
+          /* Unselected State: Clean + Add Button & 1-Tap Chips */
+          <div className="unselected-actions">
             <button
               type="button"
-              className={`unit-toggle-btn ${unit === 'kg' ? 'active' : ''}`}
-              onClick={() => handleUnitToggle('kg')}
+              className="btn-add-primary"
+              onClick={() => setPreset(0.5)}
+              title={`Add ${isLiquid ? '500ml' : '500g'} to list`}
             >
-              kg
+              <span className="btn-add-icon">+</span>
+              <span className="btn-add-text">ADD</span>
             </button>
-            <button
-              type="button"
-              className={`unit-toggle-btn ${unit === 'g' ? 'active' : ''}`}
-              onClick={() => handleUnitToggle('g')}
-            >
-              g
-            </button>
-          </div>
-        </div>
 
-        <div className="kg-stepper">
-          <button
-            type="button"
-            className="stepper-btn stepper-btn--minus"
-            onClick={() => handleStep(-0.05)}
-            disabled={currentKg <= 0}
-            title="Decrease by 50g"
-          >
-            −
-          </button>
-
-          <div className="kg-input-wrapper">
-            <input
-              id={`kg-${item.id}`}
-              type="text"
-              inputMode="decimal"
-              className="kg-input"
-              placeholder={unit === 'kg' ? 'e.g. 0.5' : 'e.g. 250'}
-              value={kgStr}
-              onChange={handleInputChange}
-            />
-            <span className="kg-unit">{unit}</span>
-
-            {kgStr !== '' && (
+            <div className="quick-chips">
               <button
                 type="button"
-                className="input-clear-btn"
+                className="chip-pill"
+                onClick={() => setPreset(0.25)}
+                title={`Add ${isLiquid ? '¼ L (250ml)' : '¼ kg (250g)'}`}
+              >
+                {isLiquid ? '250ml' : '250g'}
+              </button>
+              <button
+                type="button"
+                className="chip-pill"
+                onClick={() => setPreset(0.5)}
+                title={`Add ${isLiquid ? '½ L (500ml)' : '½ kg (500g)'}`}
+              >
+                {isLiquid ? '500ml' : '500g'}
+              </button>
+              <button
+                type="button"
+                className="chip-pill"
+                onClick={() => setPreset(1.0)}
+                title={`Add 1 ${isLiquid ? 'L' : 'kg'}`}
+              >
+                {isLiquid ? '1L' : '1kg'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* Selected State: Compact Stepper + Chips */
+          <div className="selected-actions fade-in">
+            <div className="compact-stepper">
+              <button
+                type="button"
+                className="compact-step-btn"
+                onClick={() => handleStep(-0.05)}
+                title={`Decrease by ${isLiquid ? '50ml' : '50g'}`}
+              >
+                −
+              </button>
+
+              <div className="compact-input-wrap">
+                <input
+                  id={`qty-${item.id}`}
+                  type="text"
+                  inputMode="decimal"
+                  className="compact-input"
+                  value={valStr}
+                  onChange={handleInputChange}
+                  placeholder="0"
+                />
+                <button
+                  type="button"
+                  className="unit-toggle-tag"
+                  onClick={handleUnitToggle}
+                  title={`Switch to ${unit === mainUnit ? (isLiquid ? 'milliliters (ml)' : 'grams (g)') : (isLiquid ? 'liters (L)' : 'kilograms (kg)')}`}
+                >
+                  {unit}
+                </button>
+              </div>
+
+              <button
+                type="button"
+                className="compact-step-btn"
+                onClick={() => handleStep(0.05)}
+                title={`Increase by ${isLiquid ? '50ml' : '50g'}`}
+              >
+                +
+              </button>
+
+              <button
+                type="button"
+                className="compact-clear-btn"
                 onClick={clearInput}
-                title="Clear weight input"
+                title="Remove item"
               >
                 ✕
               </button>
-            )}
+            </div>
+
+            {/* Quick Switch Preset Chips */}
+            <div className="quick-chips">
+              <button
+                type="button"
+                className={`chip-pill ${Math.abs(currentVal - 0.1) < 0.001 ? 'chip-pill--active' : ''}`}
+                onClick={() => setPreset(0.1)}
+                title={isLiquid ? '100ml' : '100g'}
+              >
+                {isLiquid ? '100ml' : '100g'}
+              </button>
+              <button
+                type="button"
+                className={`chip-pill ${Math.abs(currentVal - 0.25) < 0.001 ? 'chip-pill--active' : ''}`}
+                onClick={() => setPreset(0.25)}
+                title={isLiquid ? '250ml (¼ L)' : '250g (¼ kg)'}
+              >
+                {isLiquid ? '250ml' : '250g'}
+              </button>
+              <button
+                type="button"
+                className={`chip-pill ${Math.abs(currentVal - 0.5) < 0.001 ? 'chip-pill--active' : ''}`}
+                onClick={() => setPreset(0.5)}
+                title={isLiquid ? '500ml (½ L)' : '500g (½ kg)'}
+              >
+                {isLiquid ? '500ml' : '500g'}
+              </button>
+              <button
+                type="button"
+                className={`chip-pill ${Math.abs(currentVal - 1.0) < 0.001 ? 'chip-pill--active' : ''}`}
+                onClick={() => setPreset(1.0)}
+                title={`1 ${isLiquid ? 'L' : 'kg'}`}
+              >
+                {isLiquid ? '1L' : '1kg'}
+              </button>
+            </div>
           </div>
-
-          <button
-            type="button"
-            className="stepper-btn stepper-btn--plus"
-            onClick={() => handleStep(0.05)}
-            title="Increase by 50g"
-          >
-            +
-          </button>
-        </div>
-
-        {/* Quick Presets: 50g, 100g, 250g, 500g, 750g, 1 kg */}
-        <div className="kg-presets">
-          <button
-            type="button"
-            className={`preset-btn ${Math.abs(currentKg - 0.05) < 0.001 ? 'preset-btn--active' : ''}`}
-            onClick={() => setPreset(0.05)}
-            title="50 g / 50 கிராம்கள்"
-          >
-            50 g
-          </button>
-          <button
-            type="button"
-            className={`preset-btn ${Math.abs(currentKg - 0.1) < 0.001 ? 'preset-btn--active' : ''}`}
-            onClick={() => setPreset(0.1)}
-            title="100 g / 100 கிராம்கள்"
-          >
-            100 g
-          </button>
-          <button
-            type="button"
-            className={`preset-btn ${Math.abs(currentKg - 0.25) < 0.001 ? 'preset-btn--active' : ''}`}
-            onClick={() => setPreset(0.25)}
-            title="250 g (¼ kg) / கால் கிலோ"
-          >
-            250 g
-          </button>
-          <button
-            type="button"
-            className={`preset-btn ${Math.abs(currentKg - 0.5) < 0.001 ? 'preset-btn--active' : ''}`}
-            onClick={() => setPreset(0.5)}
-            title="500 g (½ kg) / அரை கிலோ"
-          >
-            500 g
-          </button>
-          <button
-            type="button"
-            className={`preset-btn ${Math.abs(currentKg - 0.75) < 0.001 ? 'preset-btn--active' : ''}`}
-            onClick={() => setPreset(0.75)}
-            title="750 g (¾ kg) / முக்கால் கிலோ"
-          >
-            750 g
-          </button>
-          <button
-            type="button"
-            className={`preset-btn ${Math.abs(currentKg - 1.0) < 0.001 ? 'preset-btn--active' : ''}`}
-            onClick={() => setPreset(1.0)}
-            title="1.0 kg / ஒரு கிலோ"
-          >
-            1 kg
-          </button>
-        </div>
+        )}
       </div>
     </div>
   );
 }
-

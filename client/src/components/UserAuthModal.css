@@ -76,3 +76,25 @@
   gap: var(--space-sm);
   margin-top: var(--space-xs);
 }
+
+@media (max-width: 480px) {
+  .user-auth-card {
+    padding: var(--space-md);
+    border-radius: var(--radius-lg);
+    max-width: calc(100vw - 24px);
+  }
+
+  .user-auth-header h2 {
+    font-size: 1.15rem;
+  }
+
+  .auth-actions {
+    flex-direction: column-reverse;
+  }
+
+  .auth-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+

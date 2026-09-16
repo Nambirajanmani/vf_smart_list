@@ -190,6 +190,21 @@ export default function AdminPage() {
               <div className="stat-label">Fruits</div>
             </div>
             <div className="stat-card glass-card">
+              <div className="stat-icon">🛍️</div>
+              <div className="stat-value" style={{color:'#a78bfa'}}>{stats.groceries}</div>
+              <div className="stat-label">Groceries</div>
+            </div>
+            <div className="stat-card glass-card">
+              <div className="stat-icon">🥛</div>
+              <div className="stat-value" style={{color:'var(--dairy-accent)'}}>{stats.dairy || 0}</div>
+              <div className="stat-label">Dairy</div>
+            </div>
+            <div className="stat-card glass-card">
+              <div className="stat-icon">🥜</div>
+              <div className="stat-value" style={{color:'var(--nuts-accent)'}}>{stats.nuts || 0}</div>
+              <div className="stat-label">Nuts</div>
+            </div>
+            <div className="stat-card glass-card">
               <div className="stat-icon">👁️</div>
               <div className="stat-value" style={{color:'var(--success)'}}>{stats.active}</div>
               <div className="stat-label">Visible</div>
@@ -205,13 +220,13 @@ export default function AdminPage() {
         {/* ── Filters ── */}
         <div className="admin-filters">
           <div className="tabs">
-            {['all','vegetable','fruit'].map(cat => (
+            {['all','vegetable','fruit','grocery','dairy','nuts'].map(cat => (
               <button
                 key={cat}
                 className={`tab-btn ${filterCat === cat ? 'tab-btn--active' : ''}`}
                 onClick={() => setFilterCat(cat)}
               >
-                {cat === 'all' ? '📦 All' : cat === 'vegetable' ? '🥦 Vegetables' : '🍎 Fruits'}
+                {cat === 'all' ? '📦 All' : cat === 'vegetable' ? '🥦 Vegetables' : cat === 'fruit' ? '🍎 Fruits' : cat === 'dairy' ? '🥛 Dairy' : cat === 'nuts' ? '🥜 Nuts' : '🛍️ Groceries'}
               </button>
             ))}
           </div>

@@ -15,7 +15,7 @@ const getPublicItems = async (req, res) => {
     let query  = 'SELECT * FROM items WHERE is_active = TRUE';
     const params = [];
 
-    if (category && ['vegetable', 'fruit'].includes(category)) {
+    if (category && ['vegetable', 'fruit', 'grocery', 'dairy', 'nuts'].includes(category)) {
       params.push(category);
       query += ` AND category = $${params.length}`;
     }
@@ -45,7 +45,7 @@ const getAllItems = async (req, res) => {
     let query  = 'SELECT * FROM items WHERE 1=1';
     const params = [];
 
-    if (category && ['vegetable', 'fruit'].includes(category)) {
+    if (category && ['vegetable', 'fruit', 'grocery', 'dairy', 'nuts'].includes(category)) {
       params.push(category);
       query += ` AND category = $${params.length}`;
     }
@@ -77,8 +77,8 @@ const createItem = async (req, res) => {
       return res.status(400).json({ error: 'name and category are required.' });
     }
 
-    if (!['vegetable', 'fruit'].includes(category)) {
-      return res.status(400).json({ error: 'category must be "vegetable" or "fruit".' });
+    if (!['vegetable', 'fruit', 'grocery', 'dairy', 'nuts'].includes(category)) {
+      return res.status(400).json({ error: 'category must be "vegetable", "fruit", "grocery", "dairy", or "nuts".' });
     }
 
     const result = await pool.query(
@@ -197,6 +197,9 @@ const getStats = async (req, res) => {
         COUNT(*)                                          AS total,
         COUNT(*) FILTER (WHERE category = 'vegetable')   AS vegetables,
         COUNT(*) FILTER (WHERE category = 'fruit')       AS fruits,
+        COUNT(*) FILTER (WHERE category = 'grocery')     AS groceries,
+        COUNT(*) FILTER (WHERE category = 'dairy')       AS dairy,
+        COUNT(*) FILTER (WHERE category = 'nuts')        AS nuts,
         COUNT(*) FILTER (WHERE is_active = TRUE)         AS active,
         COUNT(*) FILTER (WHERE is_active = FALSE)        AS hidden
       FROM items

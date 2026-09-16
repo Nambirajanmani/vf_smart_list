@@ -35,3 +35,53 @@ export const formatKgFraction = (val) => {
 
   return `${kg.toFixed(2)} kg`;
 };
+
+/**
+ * Helper to format decimal volume values into clear Liter strings.
+ * e.g.,
+ * 0.05 -> "50 ml"
+ * 0.1  -> "100 ml"
+ * 0.25 -> "¼ L (250 ml)"
+ * 0.5  -> "½ L (500 ml)"
+ * 0.75 -> "¾ L (750 ml)"
+ * 1.0  -> "1 L"
+ * 1.25 -> "1 ¼ L"
+ * 1.5  -> "1 ½ L"
+ */
+export const formatLiters = (val) => {
+  const l = parseFloat(val) || 0;
+  if (l === 0) return '0 L';
+
+  const totalMl = Math.round(l * 1000);
+  if (totalMl < 1000) {
+    if (totalMl === 50) return '50 ml';
+    if (totalMl === 100) return '100 ml';
+    if (totalMl === 250) return '¼ L (250 ml)';
+    if (totalMl === 500) return '½ L (500 ml)';
+    if (totalMl === 750) return '¾ L (750 ml)';
+    return `${totalMl} ml`;
+  }
+
+  const whole = Math.floor(l);
+  const remMl = Math.round((l - whole) * 1000);
+
+  if (remMl === 0) return `${whole} L`;
+  if (remMl === 250) return `${whole} ¼ L`;
+  if (remMl === 500) return `${whole} ½ L`;
+  if (remMl === 750) return `${whole} ¾ L`;
+  if (remMl > 0) return `${whole} L ${remMl} ml`;
+
+  return `${l.toFixed(2)} L`;
+};
+
+/**
+ * Unified formatter based on category:
+ * 'dairy' -> uses Liters (L / ml)
+ * all other categories -> uses Weight (kg / g)
+ */
+export const formatItemQty = (val, category) => {
+  if (category === 'dairy') {
+    return formatLiters(val);
+  }
+  return formatKgFraction(val);
+};

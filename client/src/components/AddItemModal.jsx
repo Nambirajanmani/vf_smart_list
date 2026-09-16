@@ -3,9 +3,12 @@ import './AddItemModal.css';
 
 const VEGETABLES_EMOJIS = ['🥦','🥕','🍅','🥔','🧅','🧄','🫛','🌽','🍆','🫑','🥒','🌶️','🍄','🌿','🟣','🌱','🫚'];
 const FRUIT_EMOJIS      = ['🍎','🍊','🍋','🍇','🍓','🥝','🍑','🍒','🥭','🍍','🥥','🍌','🍐','🍈','🍉','🫐','⭐','🟤','🔴','🟡','🟢'];
+const GROCERY_EMOJIS    = ['🛍️','🌾','🌶️','🌿','🟡','🟢','⚫','🟤','⚪','🧂','🍬','🍚','🫙','🍃','🥥','🟣','🌱','🫚','🍋','🍯','🧴'];
+const DAIRY_EMOJIS      = ['🥛','🥣','🧈','🧀','🍶','🍦','🍨','🍮','🫙','🧁','🧊','📦'];
+const NUTS_EMOJIS       = ['🥜','🌰','🍇','🌴','🟤','🧠','🎃','🌻','⚫','🌱','🟡','⚪'];
 
 /**
- * AddItemModal — Modal dialog for adding a new vegetable or fruit with English & Tamil names.
+ * AddItemModal — Modal dialog for adding a new vegetable, fruit, or grocery item with English & Tamil names.
  */
 export default function AddItemModal({ onClose, onSubmit }) {
   const [form, setForm]     = useState({
@@ -14,17 +17,22 @@ export default function AddItemModal({ onClose, onSubmit }) {
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState('');
 
-  const emojiOptions = form.category === 'vegetable' ? VEGETABLES_EMOJIS : FRUIT_EMOJIS;
+  const emojiOptions = form.category === 'vegetable' ? VEGETABLES_EMOJIS
+                     : form.category === 'fruit'     ? FRUIT_EMOJIS
+                     : form.category === 'dairy'     ? DAIRY_EMOJIS
+                     : form.category === 'nuts'      ? NUTS_EMOJIS
+                     : GROCERY_EMOJIS;
 
   const handleChange = (field, value) => {
     setForm(prev => {
       const updated = { ...prev, [field]: value };
       if (field === 'category') {
-        updated.emoji = value === 'vegetable' ? '🥦' : '🍎';
+        updated.emoji = value === 'vegetable' ? '🥦' : value === 'fruit' ? '🍎' : value === 'dairy' ? '🥛' : value === 'nuts' ? '🥜' : '🛍️';
       }
       return updated;
     });
   };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -97,6 +105,27 @@ export default function AddItemModal({ onClose, onSubmit }) {
                 onClick={() => handleChange('category', 'fruit')}
               >
                 🍎 Fruit
+              </button>
+              <button
+                type="button"
+                className={`cat-btn ${form.category === 'grocery' ? 'cat-btn--active grocery' : ''}`}
+                onClick={() => handleChange('category', 'grocery')}
+              >
+                🛍️ Grocery
+              </button>
+              <button
+                type="button"
+                className={`cat-btn ${form.category === 'dairy' ? 'cat-btn--active dairy' : ''}`}
+                onClick={() => handleChange('category', 'dairy')}
+              >
+                🥛 Dairy
+              </button>
+              <button
+                type="button"
+                className={`cat-btn ${form.category === 'nuts' ? 'cat-btn--active nuts' : ''}`}
+                onClick={() => handleChange('category', 'nuts')}
+              >
+                🥜 Nuts
               </button>
             </div>
           </div>

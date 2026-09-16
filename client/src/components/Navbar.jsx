@@ -16,26 +16,33 @@ export default function Navbar({ user, onOpenAuth, onOpenHistory, onLogout }) {
         </Link>
 
         <div className="navbar-links">
-          <Link to="/" className={`nav-link ${!isAdmin ? 'active' : ''}`}>🏪 Market</Link>
+          <Link to="/" className={`nav-link ${!isAdmin ? 'active' : ''}`} title="Market">
+            <span>🏪</span>
+            <span className="nav-link-label">Market</span>
+          </Link>
 
           {!isAdmin && (
             user ? (
               <div className="user-nav-group">
-                <button type="button" className="btn btn-ghost btn-sm" onClick={onOpenHistory} title="View my saved shopping history">
-                  📜 My History
+                <button type="button" className="btn btn-ghost btn-sm nav-history-btn" onClick={onOpenHistory} title="View my saved shopping history">
+                  <span>📜</span>
+                  <span className="btn-label-mobile">History</span>
                 </button>
 
                 <div className="user-badge" title={`Logged in as ${user.username}`}>
-                  👤 {user.username}
+                  <span className="user-badge-icon">👤</span>
+                  <span className="user-badge-name">{user.username}</span>
                 </div>
 
-                <button type="button" className="btn btn-ghost btn-sm text-muted" onClick={onLogout} title="Log out">
-                  🚪 Logout
+                <button type="button" className="btn btn-ghost btn-sm text-muted nav-logout-btn" onClick={onLogout} title="Log out">
+                  <span>🚪</span>
+                  <span className="btn-label-mobile">Logout</span>
                 </button>
               </div>
             ) : (
-              <button type="button" className="btn btn-primary btn-sm user-login-btn" onClick={onOpenAuth}>
-                👤 User Login
+              <button type="button" className="btn btn-primary btn-sm user-login-btn" onClick={onOpenAuth} title="User Login">
+                <span>👤</span>
+                <span className="btn-label-mobile">Login</span>
               </button>
             )
           )}
