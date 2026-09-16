@@ -357,8 +357,6 @@
 }
 
 @media (max-width: 600px) {
-<<<<<<< HEAD
-=======
   .hero {
     padding: var(--space-xl) 0 var(--space-md);
   }
@@ -387,6 +385,9 @@
     font-size: 0.8rem;
     padding: 6px 10px;
   }
+  .selected-items-grid {
+    grid-template-columns: 1fr;
+  }
   .selected-item-chip {
     min-width: unset;
     max-width: 100%;
@@ -408,10 +409,10 @@
     width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    justify-content: space-between;
+    justify-content: flex-start;
   }
   .tab-btn {
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     padding: 8px 12px;
     font-size: 0.82rem;
     text-align: center;
@@ -424,17 +425,10 @@
     flex-direction: column;
     align-items: flex-start;
   }
->>>>>>> origin/master
   .items-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
   }
-<<<<<<< HEAD
-  .selected-items-grid { grid-template-columns: 1fr; }
-  .controls-bar { flex-direction: column; align-items: stretch; }
-  .search-wrapper { min-width: unset; }
-  .selected-list-header { flex-direction: column; align-items: flex-start; }
-=======
 }
 
 @media (max-width: 360px) {
@@ -444,7 +438,6 @@
   .selected-list-actions .btn {
     flex: 1 1 100%;
   }
->>>>>>> origin/master
 }
 
 /* ── State Center ───────────────────────────────────────── */
