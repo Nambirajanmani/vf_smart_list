@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { formatItemQty } from '../utils/formatKg.js';
+import { getTanglishName, getEnglishName } from '../utils/tanglish.js';
 import './ItemCard.css';
 
 /**
@@ -84,6 +85,29 @@ export default function ItemCard({ item, value = 0, onQtyChange }) {
   const currentVal = parseToBase(valStr, unit);
   const isSelected = currentVal > 0;
 
+  // Derive proper English and Tanglish display values
+  const englishName = getEnglishName(item);
+  const cleanName   = (item.name || '').trim();
+  const lowerName   = cleanName.toLowerCase();
+  const lowerEn     = (englishName || '').toLowerCase();
+
+  // Determine if English name should be appended to item.name
+  const hasEnglishInName = lowerEn && (
+    lowerName === lowerEn ||
+    lowerName.includes(`(${lowerEn})`) ||
+    lowerName.includes(lowerEn)
+  );
+  const englishSuffix = (!hasEnglishInName && englishName) ? ` (${englishName})` : '';
+  const fullDisplayName = `${cleanName}${englishSuffix}`;
+
+  // Subtitle Tanglish name: avoid showing if it's already in the main name or english name
+  const tanglish = getTanglishName(item);
+  const lowerTanglish = (tanglish || '').toLowerCase();
+  const showTanglish = tanglish && (
+    !lowerName.includes(lowerTanglish) &&
+    !lowerEn.includes(lowerTanglish)
+  );
+
   return (
     <div className={`item-card glass-card ${isSelected ? 'item-card--selected' : ''} ${item.category}`}>
       {/* Top Header Row: Emoji Thumbnail + Category Badge / Selection Badge */}
@@ -103,10 +127,20 @@ export default function ItemCard({ item, value = 0, onQtyChange }) {
         )}
       </div>
 
-      {/* Item Names (English & Tamil) */}
+      {/* Item Names (English, Tamil & Tanglish) */}
       <div className="item-names">
-        <h3 className="item-name" title={item.name}>{item.name}</h3>
-        {item.name_ta && <span className="item-name-ta" title={item.name_ta}>{item.name_ta}</span>}
+        <h3 className="item-name" title={fullDisplayName}>
+          <span className="item-name-main">{cleanName}</span>
+          {englishSuffix && <span className="item-name-en">{englishSuffix}</span>}
+        </h3>
+        <div className="item-sub-names">
+          {item.name_ta && <span className="item-name-ta" title={item.name_ta}>{item.name_ta}</span>}
+          {showTanglish && (
+            <span className="item-name-tanglish" title={tanglish}>
+              ({tanglish})
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Action Area: Compact Add / Stepper Controls */}

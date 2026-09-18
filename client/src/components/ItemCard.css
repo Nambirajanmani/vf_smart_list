@@ -235,12 +235,45 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 4px;
+}
+
+.item-name-main {
+  color: var(--text-primary);
+}
+
+.item-name-en {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.item-sub-names {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  flex-wrap: wrap;
 }
 
 .item-name-ta {
   font-size: 0.74rem;
   font-weight: 600;
   color: var(--accent-light);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-name-tanglish {
+  font-size: 0.71rem;
+  font-weight: 500;
+  color: #94a3b8;
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;

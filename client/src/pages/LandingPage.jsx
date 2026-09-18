@@ -4,8 +4,11 @@ import Navbar        from '../components/Navbar.jsx';
 import ItemCard      from '../components/ItemCard.jsx';
 import UserAuthModal from '../components/UserAuthModal.jsx';
 import HistoryModal  from '../components/HistoryModal.jsx';
+import AiVoiceAssistant from '../components/AiVoiceAssistant.jsx';
 import { fetchPublicItems, saveHistory } from '../api/api.js';
 import { formatKgFraction, formatLiters, formatItemQty } from '../utils/formatKg.js';
+import { readShoppingListAloud, stopSpeaking } from '../utils/speechSynthesis.js';
+import { getTanglishName, getEnglishName } from '../utils/tanglish.js';
 import './LandingPage.css';
 
 const TABS = [
@@ -49,6 +52,24 @@ export default function LandingPage() {
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [saveSuccess, setSaveSuccess]           = useState(false);
   const [savingHistory, setSavingHistory]       = useState(false);
+
+  // AI Voice Assistant & TTS states
+  const [openAiVoiceModal, setOpenAiVoiceModal] = useState(false);
+  const [isReadingAloud,   setIsReadingAloud]   = useState(false);
+
+  // Read entire shopping list aloud using AI Text-to-Speech
+  const handleToggleReadAloud = () => {
+    if (isReadingAloud) {
+      stopSpeaking();
+      setIsReadingAloud(false);
+    } else {
+      if (selectedItems.length === 0) return;
+      setIsReadingAloud(true);
+      readShoppingListAloud(selectedItems, 'en', () => {
+        setIsReadingAloud(false);
+      });
+    }
+  };
 
   // Fetch items when tab changes
   useEffect(() => {
@@ -111,15 +132,32 @@ export default function LandingPage() {
     });
   }, []);
 
-  // Compute selected items list
+  // Compute selected items list with proper English and Tanglish display names
   const selectedItems = items
     .filter(item => (quantities[item.id] || 0) > 0)
-    .map(item => ({
-      ...item,
-      qty: quantities[item.id],
-      kg: quantities[item.id],
-      kgFormatted: formatItemQty(quantities[item.id], item.category),
-    }));
+    .map(item => {
+      const englishName = getEnglishName(item);
+      const cleanName   = (item.name || '').trim();
+      const lowerName   = cleanName.toLowerCase();
+      const lowerEn     = (englishName || '').toLowerCase();
+      const hasEnglish  = lowerEn && (
+        lowerName === lowerEn ||
+        lowerName.includes(`(${lowerEn})`) ||
+        lowerName.includes(lowerEn)
+      );
+      const englishSuffix = (!hasEnglish && englishName) ? ` (${englishName})` : '';
+      const fullName = `${cleanName}${englishSuffix}`;
+
+      return {
+        ...item,
+        fullName,
+        english: englishName,
+        qty: quantities[item.id],
+        kg: quantities[item.id],
+        kgFormatted: formatItemQty(quantities[item.id], item.category),
+        tanglish: getTanglishName(item),
+      };
+    });
 
   const selectedCount = selectedItems.length;
   const solidItems = selectedItems.filter(item => item.category !== 'dairy');
@@ -134,21 +172,28 @@ export default function LandingPage() {
     return parts.length > 0 ? parts.join(' • ') : '0 items';
   };
 
-  // Filter items grid by search (searches both English and Tamil names)
+  // Filter items grid by search (searches English, Tamil, and Tanglish names)
   const filtered = items.filter(item => {
     const query = search.toLowerCase();
+    const tanglish = (getTanglishName(item) || '').toLowerCase();
+    const english  = (getEnglishName(item) || '').toLowerCase();
     const matchEn = item.name.toLowerCase().includes(query);
     const matchTa = item.name_ta ? item.name_ta.toLowerCase().includes(query) : false;
-    return matchEn || matchTa;
+    const matchTanglish = tanglish ? tanglish.includes(query) : false;
+    const matchEnglish = english ? english.includes(query) : false;
+    return matchEn || matchTa || matchTanglish || matchEnglish;
   });
 
-  // 1. Copy Shopping List to Clipboard (formatted with English + Tamil & Fractions)
+  // 1. Copy Shopping List to Clipboard (formatted with English + Tamil + Tanglish)
   const handleCopyList = () => {
     if (selectedItems.length === 0) return;
     const text = [
       '🛒 VF Smart Shopping List / காய்கறி & பழங்கள் பட்டியல்',
       '────────────────────────────────────────────────────────',
-      ...selectedItems.map(item => `${item.emoji} ${item.name} (${item.name_ta || ''}): ${item.kgFormatted}`),
+      ...selectedItems.map(item => {
+        const showTanglish = item.tanglish && !item.name.toLowerCase().includes(item.tanglish.toLowerCase());
+        return `${item.emoji} ${item.fullName || item.name} (${item.name_ta || ''}${showTanglish ? ` - ${item.tanglish}` : ''}): ${item.kgFormatted}`;
+      }),
       '────────────────────────────────────────────────────────',
       `📦 Total Items: ${selectedCount} | ${getSummaryQtyString()}`,
     ].join('\n');
@@ -165,7 +210,10 @@ export default function LandingPage() {
     const text = [
       '🛒 *VF Smart Shopping List / காய்கறி & பழங்கள் பட்டியல்*',
       '──────────────────────────────',
-      ...selectedItems.map(item => `${item.emoji} *${item.name}* (${item.name_ta || ''}): *${item.kgFormatted}*`),
+      ...selectedItems.map(item => {
+        const showTanglish = item.tanglish && !item.name.toLowerCase().includes(item.tanglish.toLowerCase());
+        return `${item.emoji} *${item.fullName || item.name}* (${item.name_ta || ''}${showTanglish ? ` / ${item.tanglish}` : ''}): *${item.kgFormatted}*`;
+      }),
       '──────────────────────────────',
       `📦 *Total Items:* ${selectedCount} | ${getSummaryQtyString()}`,
       '',
@@ -178,9 +226,23 @@ export default function LandingPage() {
 
   // 2b. Share Single Item on WhatsApp
   const handleShareSingleWhatsApp = (item) => {
+    const itemTanglish = item.tanglish || getTanglishName(item);
+    const englishName = getEnglishName(item);
+    const cleanName   = (item.name || '').trim();
+    const lowerName   = cleanName.toLowerCase();
+    const lowerEn     = (englishName || '').toLowerCase();
+    const hasEnglish  = lowerEn && (
+      lowerName === lowerEn ||
+      lowerName.includes(`(${lowerEn})`) ||
+      lowerName.includes(lowerEn)
+    );
+    const englishSuffix = (!hasEnglish && englishName) ? ` (${englishName})` : '';
+    const fullName = `${cleanName}${englishSuffix}`;
+    const showTanglish = itemTanglish && !lowerName.includes(itemTanglish.toLowerCase());
+
     const text = [
       '🛒 *VF Smart Shopping List*',
-      `${item.emoji} *${item.name}* (${item.name_ta || ''}): *${item.kgFormatted}*`,
+      `${item.emoji} *${fullName}* (${item.name_ta || ''}${showTanglish ? ` / ${itemTanglish}` : ''}): *${item.kgFormatted}*`,
       '',
       '_Shared from VF Smart List 🥬🍎_'
     ].join('\n');
@@ -263,17 +325,20 @@ export default function LandingPage() {
       ctx.font = '18px "Segoe UI Emoji", sans-serif';
       ctx.fillText(item.emoji, 42, y);
 
-      // English Name
+      // Display Name with English
+      const displayName = item.fullName || item.name;
       ctx.fillStyle = '#f8fafc';
       ctx.font = 'bold 15px "Outfit", sans-serif';
-      ctx.fillText(item.name, 72, y);
+      ctx.fillText(displayName, 72, y);
 
-      // Tamil Name
-      if (item.name_ta) {
-        const enWidth = ctx.measureText(item.name).width;
+      // Tamil & Tanglish Name
+      const showTanglish = item.tanglish && !item.name.toLowerCase().includes(item.tanglish.toLowerCase());
+      if (item.name_ta || showTanglish) {
+        const enWidth = ctx.measureText(displayName).width;
         ctx.fillStyle = '#22c55e';
-        ctx.font = 'bold 14px "Outfit", sans-serif';
-        ctx.fillText(`(${item.name_ta})`, 82 + enWidth, y);
+        ctx.font = 'bold 13px "Outfit", sans-serif';
+        const sub = item.name_ta && showTanglish ? `(${item.name_ta} • ${item.tanglish})` : `(${item.name_ta || item.tanglish})`;
+        ctx.fillText(sub, 82 + enWidth, y);
       }
 
       // Category
@@ -325,7 +390,7 @@ export default function LandingPage() {
       <tr style="background: ${index % 2 === 0 ? '#f8fafc' : '#ffffff'};">
         <td style="padding: 10px 14px; font-size: 20px;">${item.emoji}</td>
         <td style="padding: 10px 14px; font-weight: 600; font-size: 15px;">
-          ${item.name} <span style="color: #16a34a; font-weight: 600; font-size: 14px;">(${item.name_ta || ''})</span>
+          ${item.fullName || item.name} <span style="color: #16a34a; font-weight: 600; font-size: 13px;">(${item.name_ta || ''}${item.tanglish && !item.name.toLowerCase().includes(item.tanglish.toLowerCase()) ? ` / ${item.tanglish}` : ''})</span>
         </td>
         <td style="padding: 10px 14px; font-weight: bold; color: ${item.category === 'vegetable' ? '#16a34a' : item.category === 'fruit' ? '#ea580c' : item.category === 'dairy' ? '#0284c7' : item.category === 'nuts' ? '#d97706' : '#7c3aed'}; text-transform: uppercase; font-size: 12px;">
           ${item.category}
@@ -404,6 +469,7 @@ export default function LandingPage() {
         onOpenAuth={() => setShowAuthModal(true)}
         onOpenHistory={() => setShowHistoryModal(true)}
         onLogout={handleUserLogout}
+        onOpenVoice={() => setOpenAiVoiceModal(true)}
       />
 
       {/* ── Hero Section ── */}
@@ -463,6 +529,15 @@ export default function LandingPage() {
                   <span className="btn-short">WA</span>
                 </button>
                 <button
+                  className={`btn ${isReadingAloud ? 'btn-success' : 'btn-ghost'} btn-sm`}
+                  onClick={handleToggleReadAloud}
+                  title="Read shopping list aloud using AI Voice"
+                >
+                  <span>{isReadingAloud ? '⏹️' : '🔊'}</span>
+                  <span className="btn-full">{isReadingAloud ? 'Stop Voice' : 'Read Aloud'}</span>
+                  <span className="btn-short">{isReadingAloud ? 'Stop' : 'Read'}</span>
+                </button>
+                <button
                   className="btn btn-primary btn-sm"
                   onClick={handleDownloadImage}
                   title="Download shopping list as a PNG Image"
@@ -511,8 +586,13 @@ export default function LandingPage() {
                 <div key={item.id} className={`selected-item-chip ${item.category}`}>
                   <span className="chip-emoji">{item.emoji}</span>
                   <div className="chip-names">
-                    <span className="chip-name">{item.name}</span>
-                    {item.name_ta && <span className="chip-name-ta">{item.name_ta}</span>}
+                    <span className="chip-name">{item.fullName || item.name}</span>
+                    <div className="chip-sub-names">
+                      {item.name_ta && <span className="chip-name-ta">{item.name_ta}</span>}
+                      {item.tanglish && !item.name.toLowerCase().includes(item.tanglish.toLowerCase()) && (
+                        <span className="chip-name-tanglish">({item.tanglish})</span>
+                      )}
+                    </div>
                   </div>
                   <span className="chip-kg">{item.kgFormatted}</span>
                   
@@ -579,6 +659,15 @@ export default function LandingPage() {
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
+            <button
+              type="button"
+              className="search-mic-btn"
+              onClick={() => setOpenAiVoiceModal(true)}
+              title="Speak to search or add items (AI Voice Assistant)"
+              aria-label="AI Voice Search"
+            >
+              🎙️
+            </button>
           </div>
         </div>
 
@@ -649,6 +738,15 @@ export default function LandingPage() {
                 <span className="bar-btn-short">WA</span>
               </button>
               <button
+                className={`btn ${isReadingAloud ? 'btn-success' : 'btn-ghost'} total-btn`}
+                onClick={handleToggleReadAloud}
+                title="Read shopping list aloud using AI Voice"
+              >
+                <span>{isReadingAloud ? '⏹️' : '🔊'}</span>
+                <span className="bar-btn-full">{isReadingAloud ? 'Stop' : 'Read'}</span>
+                <span className="bar-btn-short">{isReadingAloud ? 'Stop' : 'Read'}</span>
+              </button>
+              <button
                 className="btn btn-primary total-btn"
                 onClick={handleDownloadImage}
                 title="Download as PNG image"
@@ -703,6 +801,20 @@ export default function LandingPage() {
           onReloadList={handleReloadListFromHistory}
         />
       )}
+
+      {/* ── Floating AI Voice Assistant ── */}
+      <AiVoiceAssistant
+        catalogItems={items}
+        quantities={quantities}
+        selectedItems={selectedItems}
+        onQtyChange={handleQtyChange}
+        onClearList={() => setQuantities({})}
+        onSaveHistory={handleSaveToHistory}
+        onShareWhatsApp={handleShareWhatsApp}
+        onSearch={(term) => setSearch(term)}
+        externalTriggerOpen={openAiVoiceModal}
+        onCloseExternalTrigger={() => setOpenAiVoiceModal(false)}
+      />
     </div>
   );
 }

@@ -3,27 +3,25 @@ require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const { Pool } = require('pg');
 
 const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME || 'vf_smart_list',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'nambi',
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+  connectionTimeoutMillis: 10000,
 });
 
 const NUTS_ITEMS = [
-  { name: 'Cashew', name_ta: 'முந்திரி', emoji: '🥜' },
-  { name: 'Almond', name_ta: 'பாதாம்', emoji: '🥜' },
-  { name: 'Pistachio', name_ta: 'பிஸ்தா', emoji: '🥜' },
+  { name: 'Mundhiri', name_ta: 'முந்திரி', emoji: '🥜' },
+  { name: 'Badam', name_ta: 'பாதாம்', emoji: '🥜' },
+  { name: 'Pista', name_ta: 'பிஸ்தா', emoji: '🥜' },
   { name: 'Walnut', name_ta: 'வால்நட்', emoji: '🧠' },
-  { name: 'Peanuts', name_ta: 'நிலக்கடலை', emoji: '🥜' },
-  { name: 'Raisins', name_ta: 'உலர் திராட்சை', emoji: '🍇' },
-  { name: 'Dates', name_ta: 'பேரீச்சம்பழம்', emoji: '🌴' },
-  { name: 'Figs', name_ta: 'அத்திப்பழம்', emoji: '🟤' },
-  { name: 'Almonds (Badam Paruppu)', name_ta: 'பாதாம் பருப்பு', emoji: '🥜' },
-  { name: 'Pumpkin Seeds', name_ta: 'பூசணி விதை', emoji: '🎃' },
-  { name: 'Sunflower Seeds', name_ta: 'சூரியகாந்தி விதை', emoji: '🌻' },
-  { name: 'Chia Seeds', name_ta: 'சியா விதை', emoji: '⚫' },
-  { name: 'Flax Seeds', name_ta: 'ஆளி விதை', emoji: '🟤' },
+  { name: 'Nilakkadalai', name_ta: 'நிலக்கடலை', emoji: '🥜' },
+  { name: 'Ular Thiratchai', name_ta: 'உலர் திராட்சை', emoji: '🍇' },
+  { name: 'Pericham Pazham', name_ta: 'பேரீச்சம்பழம்', emoji: '🌴' },
+  { name: 'Athipazham', name_ta: 'அத்திப்பழம்', emoji: '🟤' },
+  { name: 'Badam Paruppu', name_ta: 'பாதாம் பருப்பு', emoji: '🥜' },
+  { name: 'Poosani Vidhai', name_ta: 'பூசணி விதை', emoji: '🎃' },
+  { name: 'Suryakanthi Vidhai', name_ta: 'சூரியகாந்தி விதை', emoji: '🌻' },
+  { name: 'Chia Vidhai', name_ta: 'சியா விதை', emoji: '⚫' },
+  { name: 'Aali Vidhai', name_ta: 'ஆளி விதை', emoji: '🟤' },
 ];
 
 async function run() {

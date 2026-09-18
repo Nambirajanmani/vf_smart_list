@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { deleteItem, toggleItem } from '../api/api.js';
+import { getTanglishName, getEnglishName } from '../utils/tanglish.js';
 import './AdminItemRow.css';
 
 /**
- * AdminItemRow — One row in the admin items table (English + Tamil Name, Category, Visibility, Actions).
+ * AdminItemRow — One row in the admin items table (English + Tamil + Tanglish Name, Category, Visibility, Actions).
  */
 export default function AdminItemRow({ item, onRefresh }) {
   const [loadingDel,  setLoadingDel]  = useState(false);
@@ -18,24 +19,46 @@ export default function AdminItemRow({ item, onRefresh }) {
     setLoadingToggle(false);
   };
 
-  /* ── Delete ── */
+  /* ── Delete Item ── */
   const handleDelete = async () => {
-    if (!confirmDel) { setConfirmDel(true); return; }
+    if (!confirmDel) {
+      setConfirmDel(true);
+      setTimeout(() => setConfirmDel(false), 3000);
+      return;
+    }
     setLoadingDel(true);
     try { await deleteItem(item.id); await onRefresh(); }
     catch { /* ignore */ }
     setLoadingDel(false);
-    setConfirmDel(false);
   };
+
+  const tanglish    = getTanglishName(item);
+  const englishName = getEnglishName(item);
+  const cleanName   = (item.name || '').trim();
+  const lowerName   = cleanName.toLowerCase();
+  const lowerEn     = (englishName || '').toLowerCase();
+  const hasEnglish  = lowerEn && (
+    lowerName === lowerEn ||
+    lowerName.includes(`(${lowerEn})`) ||
+    lowerName.includes(lowerEn)
+  );
+  const englishSuffix = (!hasEnglish && englishName) ? ` (${englishName})` : '';
+  const showTanglish = tanglish && !lowerName.includes(tanglish.toLowerCase());
 
   return (
     <tr className={`admin-row ${!item.is_active ? 'admin-row--hidden' : ''}`}>
-      {/* Emoji + Name (English & Tamil) */}
+      {/* Emoji + Name (English, Tamil & Tanglish) */}
       <td className="td-name">
         <span className="row-emoji">{item.emoji}</span>
         <div className="row-names">
-          <span className="row-name">{item.name}</span>
-          {item.name_ta && <span className="row-name-ta">{item.name_ta}</span>}
+          <span className="row-name">
+            {item.name}
+            {englishSuffix && <span style={{ fontSize: '0.82rem', color: '#94a3b8', fontWeight: 500 }}>{englishSuffix}</span>}
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+            {item.name_ta && <span className="row-name-ta">{item.name_ta}</span>}
+            {showTanglish && <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>({tanglish})</span>}
+          </div>
         </div>
       </td>
 

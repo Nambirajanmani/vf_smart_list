@@ -1,18 +1,12 @@
 -- VF Smart List Database Schema
 -- Run this file first to create tables
 
--- Drop existing tables if re-running
-DROP TABLE IF EXISTS shopping_history CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
-DROP TABLE IF EXISTS items CASCADE;
-DROP TABLE IF EXISTS admin_users CASCADE;
-
--- Items table (vegetables, fruits, and groceries)
-CREATE TABLE items (
+-- Items table (vegetables, fruits, groceries, dairy, nuts)
+CREATE TABLE IF NOT EXISTS items (
     id          SERIAL PRIMARY KEY,
     name        VARCHAR(100)   NOT NULL,
     name_ta     VARCHAR(100)   DEFAULT '',
-    category    VARCHAR(20)    NOT NULL CHECK (category IN ('vegetable', 'fruit', 'grocery', 'dairy')),
+    category    VARCHAR(20)    NOT NULL CHECK (category IN ('vegetable', 'fruit', 'grocery', 'dairy', 'nuts')),
     price_per_kg DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     emoji       VARCHAR(10)    NOT NULL DEFAULT '🛒',
     is_active   BOOLEAN        NOT NULL DEFAULT TRUE,
@@ -20,7 +14,7 @@ CREATE TABLE items (
 );
 
 -- Admin users table
-CREATE TABLE admin_users (
+CREATE TABLE IF NOT EXISTS admin_users (
     id            SERIAL PRIMARY KEY,
     username      VARCHAR(50)  NOT NULL UNIQUE,
     password_hash TEXT         NOT NULL,
@@ -28,7 +22,7 @@ CREATE TABLE admin_users (
 );
 
 -- Normal users table (shoppers)
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id            SERIAL PRIMARY KEY,
     username      VARCHAR(50)  NOT NULL UNIQUE,
     email         VARCHAR(100) NOT NULL UNIQUE,
@@ -37,7 +31,7 @@ CREATE TABLE users (
 );
 
 -- Shopping selection history table
-CREATE TABLE shopping_history (
+CREATE TABLE IF NOT EXISTS shopping_history (
     id           SERIAL PRIMARY KEY,
     user_id      INTEGER       NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     title        VARCHAR(255)  DEFAULT 'Shopping List',
@@ -48,7 +42,7 @@ CREATE TABLE shopping_history (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_items_category ON items(category);
-CREATE INDEX idx_items_is_active ON items(is_active);
-CREATE INDEX idx_shopping_history_user_id ON shopping_history(user_id);
+CREATE INDEX IF NOT EXISTS idx_items_category ON items(category);
+CREATE INDEX IF NOT EXISTS idx_items_is_active ON items(is_active);
+CREATE INDEX IF NOT EXISTS idx_shopping_history_user_id ON shopping_history(user_id);
 

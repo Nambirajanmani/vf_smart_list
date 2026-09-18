@@ -12,12 +12,12 @@ const pool = new Pool({
 });
 
 const VEG_ADDITIONS = [
-  { name: 'Shallots (Small Onion)', name_ta: 'சின்ன வெங்காயம்', emoji: '🧅', price_per_kg: 60.00 },
-  { name: 'Chayote (Chow Chow)',    name_ta: 'சௌ சௌ',          emoji: '🍐', price_per_kg: 35.00 },
-  { name: 'French Beans',           name_ta: 'பிரெஞ்ச் பீன்ஸ்',   emoji: '🫘', price_per_kg: 60.00 },
-  { name: 'Palak (Spinach)',        name_ta: 'பாலக்கீரை',       emoji: '🥬', price_per_kg: 30.00 },
-  { name: 'Mint Leaves (Pudina)',   name_ta: 'புதினா',          emoji: '🌿', price_per_kg: 40.00 },
-  { name: 'Coriander Leaves',       name_ta: 'கொத்தமல்லி',       emoji: '🌿', price_per_kg: 40.00 },
+  { name: 'Chinna Vengayam', name_ta: 'சின்ன வெங்காயம்', emoji: '🧅', price_per_kg: 60.00 },
+  { name: 'Chow Chow',       name_ta: 'சௌ சௌ',          emoji: '🍐', price_per_kg: 35.00 },
+  { name: 'French Beans',    name_ta: 'பிரெஞ்ச் பீன்ஸ்',   emoji: '🫘', price_per_kg: 60.00 },
+  { name: 'Palak Keerai',    name_ta: 'பாலக்கீரை',       emoji: '🥬', price_per_kg: 30.00 },
+  { name: 'Pudina',          name_ta: 'புதினா',          emoji: '🌿', price_per_kg: 40.00 },
+  { name: 'Kothamalli',      name_ta: 'கொத்தமல்லி',       emoji: '🌿', price_per_kg: 40.00 },
 ];
 
 async function addMissingVegetables() {

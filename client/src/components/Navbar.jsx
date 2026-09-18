@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import './Navbar.css';
 
-export default function Navbar({ user, onOpenAuth, onOpenHistory, onLogout }) {
+export default function Navbar({ user, onOpenAuth, onOpenHistory, onLogout, onOpenVoice }) {
   const location = useLocation();
   const isAdmin  = location.pathname === '/admin';
 
@@ -20,6 +20,18 @@ export default function Navbar({ user, onOpenAuth, onOpenHistory, onLogout }) {
             <span>🏪</span>
             <span className="nav-link-label">Market</span>
           </Link>
+
+          {!isAdmin && onOpenVoice && (
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm nav-voice-btn"
+              onClick={onOpenVoice}
+              title="Open AI Voice Assistant (English & தமிழ்)"
+            >
+              <span className="nav-voice-icon">🎙️</span>
+              <span className="btn-label-mobile">AI Voice</span>
+            </button>
+          )}
 
           {!isAdmin && (
             user ? (
