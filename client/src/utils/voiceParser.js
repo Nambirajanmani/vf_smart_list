@@ -5,32 +5,33 @@
  * Tamil (தமிழ்), or mixed Tanglish text.
  */
 
-import { getTanglishName } from './tanglish.js';
+import { getTanglishName, getEnglishName } from './tanglish.js';
+import { findMatchingProductWithTransformer } from './transformerMatcher.js';
 
-// Common Tamil number & fraction words
+// Common Tamil & Tanglish number & fraction words
 const TAMIL_QTY_MAP = [
-  { words: ['ஒரு கிலோ', 'ஒன்னு கிலோ', '1 கிலோ', 'ஒரு'], qty: 1.0 },
-  { words: ['அரை கிலோ', 'அர கிலோ', 'அரை'], qty: 0.5 },
-  { words: ['கால் கிலோ', 'கால்'], qty: 0.25 },
-  { words: ['முக்கால் கிலோ', 'முக்கால்'], qty: 0.75 },
-  { words: ['இரண்டு கிலோ', 'ரெண்டு கிலோ', '2 கிலோ', 'ரெண்டு'], qty: 2.0 },
-  { words: ['மூன்று கிலோ', 'மூணு கிலோ', '3 கிலோ', 'மூணு'], qty: 3.0 },
-  { words: ['நான்கு கிலோ', 'நாலு கிலோ', '4 கிலோ', 'நாலு'], qty: 4.0 },
-  { words: ['ஐந்து கிலோ', 'அஞ்சு கிலோ', '5 கிலோ', 'அஞ்சு'], qty: 5.0 },
-  { words: ['100 கிராம்', 'நூறு கிராம்'], qty: 0.1 },
-  { words: ['50 கிராம்', 'ஐம்பது கிராம்', 'அம்பது கிராம்'], qty: 0.05 },
-  { words: ['200 கிராம்', 'இருநூறு கிராம்'], qty: 0.2 },
-  { words: ['250 கிராம்'], qty: 0.25 },
-  { words: ['500 கிராம்'], qty: 0.5 },
-  { words: ['750 கிராம்'], qty: 0.75 },
-  { words: ['ஒரு லிட்டர்', '1 லிட்டர்'], qty: 1.0, isLiquid: true },
-  { words: ['அரை லிட்டர்', 'அர லிட்டர்'], qty: 0.5, isLiquid: true },
-  { words: ['கால் லிட்டர்'], qty: 0.25, isLiquid: true },
-  { words: ['ரெண்டு லிட்டர்', 'இரண்டு லிட்டர்', '2 லிட்டர்'], qty: 2.0, isLiquid: true },
-  { words: ['500 மில்லி', '500 மி.லி'], qty: 0.5, isLiquid: true },
-  { words: ['250 மில்லி', '250 மி.லி'], qty: 0.25, isLiquid: true },
-  { words: ['100 மில்லி', '100 மி.லி'], qty: 0.1, isLiquid: true },
-  { words: ['50 மில்லி', '50 மி.லி'], qty: 0.05, isLiquid: true },
+  { words: ['ஒரு கிலோ', 'ஒன்னு கிலோ', '1 கிலோ', 'ஒரு', 'oru kilo', 'onnu kilo', 'one kilo', '1 kilo'], qty: 1.0 },
+  { words: ['அரை கிலோ', 'அர கிலோ', 'அரை', 'ara kilo', 'arai kilo', 'half kilo', 'half kg'], qty: 0.5 },
+  { words: ['கால் கிலோ', 'கால்', 'kaal kilo', 'kal kilo', 'quarter kilo'], qty: 0.25 },
+  { words: ['முக்கால் கிலோ', 'முக்கால்', 'mukaal kilo', 'mukkaal kilo', 'three quarters'], qty: 0.75 },
+  { words: ['இரண்டு கிலோ', 'ரெண்டு கிலோ', '2 கிலோ', 'ரெண்டு', 'rendu kilo', 'irandu kilo', 'two kilos', 'two kg'], qty: 2.0 },
+  { words: ['மூன்று கிலோ', 'மூணு கிலோ', '3 கிலோ', 'மூணு', 'moonu kilo', 'three kilos'], qty: 3.0 },
+  { words: ['நான்கு கிலோ', 'நாலு கிலோ', '4 கிலோ', 'நாலு', 'naalu kilo', 'four kilos'], qty: 4.0 },
+  { words: ['ஐந்து கிலோ', 'அஞ்சு கிலோ', '5 கிலோ', 'அஞ்சு', 'anju kilo', 'five kilos'], qty: 5.0 },
+  { words: ['100 கிராம்', 'நூறு கிராம்', '100 gram', 'nooru gram'], qty: 0.1 },
+  { words: ['50 கிராம்', 'ஐம்பது கிராம்', 'அம்பது கிராம்', '50 gram'], qty: 0.05 },
+  { words: ['200 கிராம்', 'இருநூறு கிராம்', '200 gram'], qty: 0.2 },
+  { words: ['250 கிராம்', '250 gram'], qty: 0.25 },
+  { words: ['500 கிராம்', '500 gram'], qty: 0.5 },
+  { words: ['750 கிராம்', '750 gram'], qty: 0.75 },
+  { words: ['ஒரு லிட்டர்', '1 லிட்டர்', 'oru liter', 'one liter'], qty: 1.0, isLiquid: true },
+  { words: ['அரை லிட்டர்', 'அர லிட்டர்', 'ara liter', 'half liter'], qty: 0.5, isLiquid: true },
+  { words: ['கால் லிட்டர்', 'kaal liter'], qty: 0.25, isLiquid: true },
+  { words: ['ரெண்டு லிட்டர்', 'இரண்டு லிட்டர்', '2 லிட்டர்', 'rendu liter'], qty: 2.0, isLiquid: true },
+  { words: ['500 மில்லி', '500 மி.லி', '500 ml'], qty: 0.5, isLiquid: true },
+  { words: ['250 மில்லி', '250 மி.லி', '250 ml'], qty: 0.25, isLiquid: true },
+  { words: ['100 மில்லி', '100 மி.லி', '100 ml'], qty: 0.1, isLiquid: true },
+  { words: ['50 மில்லி', '50 மி.லி', '50 ml'], qty: 0.05, isLiquid: true },
 ];
 
 // Common English number & fraction words
@@ -227,42 +228,53 @@ export function extractQuantity(snippet) {
  */
 export function findMatchingItem(term, catalogItems) {
   if (!term || !catalogItems || catalogItems.length === 0) return null;
+
+  // 1. Contextual Transformer Semantic Matcher (Cosine similarity + self-attention tokens)
+  const transformerResult = findMatchingProductWithTransformer(term, catalogItems);
+  if (transformerResult && transformerResult.item) {
+    return {
+      ...transformerResult.item,
+      _confidence: transformerResult.confidence,
+      _matchType: transformerResult.matchType
+    };
+  }
+
   const clean = normalizeText(term);
 
-  // 1. Exact or starts-with match on English name, Tamil name, or Tanglish name
+  // 2. Direct name matching across English, DB name, Tamil, and Tanglish
   for (const item of catalogItems) {
-    const enName = item.name.toLowerCase();
+    const enName = (getEnglishName(item) || '').toLowerCase();
+    const dbName = item.name.toLowerCase();
     const taName = (item.name_ta || '').toLowerCase();
     const tanglish = (getTanglishName(item) || '').toLowerCase();
 
-    if (enName === clean || taName === clean || tanglish === clean) return item;
-    if (enName.startsWith(clean) || clean.startsWith(enName)) return item;
+    if (enName === clean || dbName === clean || taName === clean || tanglish === clean) return item;
+    if (enName && (enName.startsWith(clean) || clean.startsWith(enName))) return item;
+    if (dbName.startsWith(clean) || clean.startsWith(dbName)) return item;
     if (taName && (taName.startsWith(clean) || clean.startsWith(taName))) return item;
     if (tanglish && (tanglish.startsWith(clean) || clean.startsWith(tanglish))) return item;
   }
 
-  // 2. Alias / Synonyms match
+  // 3. Alias / Synonyms match
   for (const [key, aliases] of Object.entries(ITEM_ALIASES)) {
     for (const alias of aliases) {
       if (clean.includes(alias) || alias.includes(clean)) {
-        // Find in catalog
-        const found = catalogItems.find(it =>
-          it.name.toLowerCase().includes(key) ||
-          (it.name_ta && it.name_ta.includes(alias)) ||
-          (getTanglishName(it).toLowerCase().includes(alias))
-        );
+        const found = catalogItems.find(it => {
+          const en = (getEnglishName(it) || '').toLowerCase();
+          const db = it.name.toLowerCase();
+          const ta = (it.name_ta || '').toLowerCase();
+          const tg = (getTanglishName(it) || '').toLowerCase();
+          return (
+            en.includes(key) ||
+            db.includes(key) ||
+            en.includes(alias) ||
+            db.includes(alias) ||
+            ta.includes(alias) ||
+            tg.includes(alias)
+          );
+        });
         if (found) return found;
       }
-    }
-  }
-
-  // 3. Substring matching
-  for (const item of catalogItems) {
-    const enName = item.name.toLowerCase();
-    const taName = (item.name_ta || '').toLowerCase();
-    const tanglish = (getTanglishName(item) || '').toLowerCase();
-    if (clean.length >= 3 && (enName.includes(clean) || (taName && taName.includes(clean)) || (tanglish && tanglish.includes(clean)))) {
-      return item;
     }
   }
 
@@ -446,7 +458,9 @@ export function parseVoiceCommand(transcript, catalogItems = []) {
         qty: Math.round(qty * 1000) / 1000,
         isRemove: isSegRemove,
         isLiquid: matchedItem.category === 'dairy',
-        matchedSnippet: seg
+        matchedSnippet: seg,
+        confidence: matchedItem._confidence || 0.95,
+        matchType: matchedItem._matchType || 'SEMANTIC_TRANSFORMER'
       });
     }
   }
@@ -465,14 +479,20 @@ export function parseVoiceCommand(transcript, catalogItems = []) {
     const feedbackPartsTa = [];
 
     if (addedList.length > 0) {
-      const enNames = addedList.map(i => `${i.qty >= 1 ? `${i.qty} kg` : `${Math.round(i.qty * 1000)}g`} ${i.item.name}`).join(', ');
+      const enNames = addedList.map(i => {
+        const displayName = getEnglishName(i.item) || i.item.name;
+        const unitStr = i.isLiquid
+          ? `${i.qty}L`
+          : (i.qty >= 1 ? `${i.qty} kg` : `${Math.round(i.qty * 1000)}g`);
+        return `${unitStr} ${displayName}`;
+      }).join(', ');
       const taNames = addedList.map(i => `${i.qty} கிலோ ${i.item.name_ta || i.item.name}`).join(', ');
       feedbackParts.push(`Added ${enNames}`);
       feedbackPartsTa.push(`${taNames} சேர்க்கப்பட்டது`);
     }
 
     if (removedList.length > 0) {
-      const enRem = removedList.map(i => i.item.name).join(', ');
+      const enRem = removedList.map(i => getEnglishName(i.item) || i.item.name).join(', ');
       const taRem = removedList.map(i => i.item.name_ta || i.item.name).join(', ');
       feedbackParts.push(`Removed ${enRem}`);
       feedbackPartsTa.push(`${taRem} நீக்கப்பட்டது`);

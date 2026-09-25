@@ -35,8 +35,9 @@ const WhatsAppIcon = ({ size = 16, color = 'currentColor' }) => (
 );
 
 export default function LandingPage() {
-  const [items,       setItems]       = useState([]);
-  const [loading,     setLoading]     = useState(true);
+  const [items,           setItems]           = useState([]);
+  const [allCatalogItems, setAllCatalogItems] = useState([]);
+  const [loading,         setLoading]         = useState(true);
   const [error,       setError]       = useState('');
   const [activeTab,   setActiveTab]   = useState('all');
   const [search,      setSearch]      = useState('');
@@ -80,6 +81,17 @@ export default function LandingPage() {
       .then(data => { setItems(data); setLoading(false); })
       .catch(() => { setError('Failed to load items. Is the server running?'); setLoading(false); });
   }, [activeTab]);
+
+  // Fetch complete catalog once so Voice Assistant can always identify any product
+  useEffect(() => {
+    fetchPublicItems('')
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setAllCatalogItems(data);
+        }
+      })
+      .catch(err => console.warn('Could not load complete catalog for voice assistant:', err));
+  }, []);
 
   // Logout handler
   const handleUserLogout = () => {
@@ -804,7 +816,7 @@ export default function LandingPage() {
 
       {/* ── Floating AI Voice Assistant ── */}
       <AiVoiceAssistant
-        catalogItems={items}
+        catalogItems={allCatalogItems.length > 0 ? allCatalogItems : items}
         quantities={quantities}
         selectedItems={selectedItems}
         onQtyChange={handleQtyChange}

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { parseVoiceCommand } from '../utils/voiceParser.js';
-import { getTanglishName } from '../utils/tanglish.js';
+import { getTanglishName, getEnglishName } from '../utils/tanglish.js';
+import api from '../api/api.js';
 import {
   speakText,
   stopSpeaking,
@@ -166,6 +167,23 @@ export default function AiVoiceAssistant({
 
     const result = parseVoiceCommand(rawPhrase, catalogItems);
     const spokenMessage = lang === 'ta' ? result.feedbackTamil : result.feedbackText;
+
+    // Asynchronously log to data collection pipeline for Transformer training
+    try {
+      api.post('/voice/log', {
+        utterance: rawPhrase,
+        lang,
+        action: result.action,
+        matchedItems: (result.items || []).map(i => ({
+          id: i.item.id,
+          name: i.item.name,
+          english: getEnglishName(i.item),
+          qty: i.qty,
+          confidence: i.confidence,
+          matchType: i.matchType
+        }))
+      }).catch(() => {});
+    } catch {}
 
     if (result.action === 'ADD_OR_UPDATE') {
       result.items.forEach(({ item, qty }) => {
@@ -476,7 +494,7 @@ export default function AiVoiceAssistant({
                       <div key={idx} className={`ai-parsed-chip ${pi.isRemove ? 'ai-parsed-chip--remove' : ''}`}>
                         <span>{pi.item.emoji}</span>
                         <strong>
-                          {lang === 'ta' && pi.item.name_ta ? pi.item.name_ta : pi.item.name}
+                          {lang === 'ta' && pi.item.name_ta ? pi.item.name_ta : (getEnglishName(pi.item) || pi.item.name)}
                           {getTanglishName(pi.item) && (
                             <span style={{ opacity: 0.8, fontWeight: 400, marginLeft: 4 }}>
                               ({getTanglishName(pi.item)})
@@ -489,6 +507,22 @@ export default function AiVoiceAssistant({
                           </span>
                         )}
                         {pi.isRemove && <span className="ai-parsed-removed">Removed</span>}
+                        {pi.confidence && (
+                          <span
+                            title={`Transformer Confidence: ${Math.round(pi.confidence * 100)}%`}
+                            style={{
+                              marginLeft: '6px',
+                              fontSize: '0.72rem',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              background: 'rgba(16, 185, 129, 0.15)',
+                              color: '#059669',
+                              fontWeight: 600
+                            }}
+                          >
+                            ⚡ {Math.round(pi.confidence * 100)}%
+                          </span>
+                        )}
                       </div>
                     ))}
                   </div>
