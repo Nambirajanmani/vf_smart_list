@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar        from '../components/Navbar.jsx';
 import ItemCard      from '../components/ItemCard.jsx';
@@ -37,6 +37,7 @@ const WhatsAppIcon = ({ size = 16, color = 'currentColor' }) => (
 export default function LandingPage() {
   const [items,           setItems]           = useState([]);
   const [allCatalogItems, setAllCatalogItems] = useState([]);
+  const [customVoiceItems, setCustomVoiceItems] = useState([]);
   const [loading,         setLoading]         = useState(true);
   const [error,       setError]       = useState('');
   const [activeTab,   setActiveTab]   = useState('all');
@@ -144,8 +145,28 @@ export default function LandingPage() {
     });
   }, []);
 
-  // Compute selected items list with proper English and Tanglish display names
-  const selectedItems = items
+  // Handle adding dynamic / custom items detected by Voice AI
+  const handleAddCustomItem = useCallback((newItem) => {
+    if (!newItem || !newItem.id) return;
+    setCustomVoiceItems(prev => {
+      if (prev.some(x => String(x.id) === String(newItem.id))) return prev;
+      return [...prev, newItem];
+    });
+  }, []);
+
+  // Master catalog combining DB catalog items, current tab items, and dynamic voice items
+  const masterCatalog = useMemo(() => {
+    const map = new Map();
+    (allCatalogItems || []).forEach(item => map.set(String(item.id), item));
+    (items || []).forEach(item => {
+      if (!map.has(String(item.id))) map.set(String(item.id), item);
+    });
+    (customVoiceItems || []).forEach(item => map.set(String(item.id), item));
+    return Array.from(map.values());
+  }, [allCatalogItems, items, customVoiceItems]);
+
+  // Compute selected items list across the master catalog so voice-added items always appear!
+  const selectedItems = masterCatalog
     .filter(item => (quantities[item.id] || 0) > 0)
     .map(item => {
       const englishName = getEnglishName(item);
@@ -157,7 +178,7 @@ export default function LandingPage() {
         lowerName.includes(`(${lowerEn})`) ||
         lowerName.includes(lowerEn)
       );
-      const englishSuffix = (!hasEnglish && englishName) ? ` (${englishName})` : '';
+      const englishSuffix = (!hasEnglish && englishName && !item.isCustom) ? ` (${englishName})` : '';
       const fullName = `${cleanName}${englishSuffix}`;
 
       return {
@@ -166,7 +187,7 @@ export default function LandingPage() {
         english: englishName,
         qty: quantities[item.id],
         kg: quantities[item.id],
-        kgFormatted: formatItemQty(quantities[item.id], item.category),
+        kgFormatted: formatItemQty(quantities[item.id], item.category, item),
         tanglish: getTanglishName(item),
       };
     });
@@ -816,10 +837,11 @@ export default function LandingPage() {
 
       {/* ── Floating AI Voice Assistant ── */}
       <AiVoiceAssistant
-        catalogItems={allCatalogItems.length > 0 ? allCatalogItems : items}
+        catalogItems={masterCatalog}
         quantities={quantities}
         selectedItems={selectedItems}
         onQtyChange={handleQtyChange}
+        onAddCustomItem={handleAddCustomItem}
         onClearList={() => setQuantities({})}
         onSaveHistory={handleSaveToHistory}
         onShareWhatsApp={handleShareWhatsApp}

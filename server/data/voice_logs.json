@@ -1,0 +1,28 @@
+[
+  {
+    "id": 1790585713874,
+    "timestamp": "2026-09-28T08:55:13.874Z",
+    "utterance": "Add 250g Green Chilli and 100g Ginger",
+    "lang": "en",
+    "action": "ADD_OR_UPDATE",
+    "matchedItems": [
+      {
+        "id": 40,
+        "name": "Pachai Milagaai",
+        "english": "Green Chilli",
+        "qty": 0.25,
+        "confidence": 0.99,
+        "matchType": "EXACT"
+      },
+      {
+        "id": 29,
+        "name": "Inji",
+        "english": "Ginger",
+        "qty": 0.1,
+        "confidence": 0.99,
+        "matchType": "EXACT"
+      }
+    ],
+    "user_accepted": true
+  }
+]

@@ -75,11 +75,31 @@ export const formatLiters = (val) => {
 };
 
 /**
- * Unified formatter based on category:
+ * Unified formatter based on category or custom unit:
  * 'dairy' -> uses Liters (L / ml)
+ * packet / bunch / piece -> count units
  * all other categories -> uses Weight (kg / g)
  */
-export const formatItemQty = (val, category) => {
+export const formatItemQty = (val, category, item = null) => {
+  const customUnit = item?.customUnit || item?.unit;
+  if (customUnit) {
+    if (customUnit === 'packet' || customUnit === 'packets') {
+      return `${val} pkt${val > 1 ? 's' : ''}`;
+    }
+    if (customUnit === 'bunch' || customUnit === 'bunches') {
+      return `${val} bunch${val > 1 ? 'es' : ''}`;
+    }
+    if (customUnit === 'piece' || customUnit === 'pieces') {
+      return `${val} piece${val > 1 ? 's' : ''}`;
+    }
+    if (customUnit === 'L' || customUnit === 'liter' || customUnit === 'liters') {
+      return formatLiters(val);
+    }
+    if (customUnit === 'kg' || customUnit === 'kilo') {
+      return formatKgFraction(val);
+    }
+  }
+
   if (category === 'dairy') {
     return formatLiters(val);
   }

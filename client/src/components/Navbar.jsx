@@ -26,10 +26,10 @@ export default function Navbar({ user, onOpenAuth, onOpenHistory, onLogout, onOp
               type="button"
               className="btn btn-ghost btn-sm nav-voice-btn"
               onClick={onOpenVoice}
-              title="Open AI Voice Assistant (English & தமிழ்)"
+              title="Open AI Voice Chat Assistant (English & தமிழ்)"
             >
               <span className="nav-voice-icon">🎙️</span>
-              <span className="btn-label-mobile">AI Voice</span>
+              <span className="btn-label-mobile">AI Voice Chat</span>
             </button>
           )}
 

@@ -15,6 +15,7 @@ export default function AiVoiceAssistant({
   quantities = {},
   selectedItems = [],
   onQtyChange,
+  onAddCustomItem,
   onClearList,
   onSaveHistory,
   onShareWhatsApp,
@@ -27,14 +28,49 @@ export default function AiVoiceAssistant({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [interimText, setInterimText] = useState('');
-  const [feedback, setFeedback] = useState(null); // { type: 'success'|'info'|'warning', text, items }
   const [lang, setLang] = useState('en'); // 'en' | 'ta'
   const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [autoListen, setAutoListen] = useState(false); // Hands-free continuous conversation mode
   const [textInput, setTextInput] = useState('');
   const [speechSupported, setSpeechSupported] = useState(true);
 
+  // Chat message history
+  const [messages, setMessages] = useState(() => [
+    {
+      id: 'msg_welcome',
+      sender: 'ai',
+      text: "Hello! I'm your VF Voice AI Assistant 🎙️. Speak product names, kg/grams, liters, or packets, and I will directly add them to your product list!",
+      textTa: "வணக்கம்! நான் உங்கள் VF வாய்ஸ் AI உதவியாளர் 🎙️. பொருட்கள், கிலோ/அளவு விவரங்களை பேசினால் நேரடியாக உங்கள் பட்டியலில் சேர்க்கப்படும்!",
+      timestamp: 'Online',
+      prompts: [
+        'Add 2kg Tomato and 1kg Onion',
+        'Add 1 Liter Milk and 500g Butter',
+        'Add 250g Green Chilli and 100g Ginger',
+        'What is in my list?',
+        'Clear list'
+      ],
+      promptsTa: [
+        'ஒரு கிலோ தக்காளி, அரை கிலோ வெங்காயம்',
+        'அரை லிட்டர் பால், 250 கிராம் வெண்ணெய்',
+        '250 கிராம் பச்சை மிளகாய், 100 கிராம் இஞ்சி',
+        'பட்டியலை வாசி',
+        'பட்டியலை அழி'
+      ]
+    }
+  ]);
+
   const recognitionRef = useRef(null);
   const finalTranscriptAccumulator = useRef('');
+  const chatBottomRef = useRef(null);
+  const autoListenRef = useRef(autoListen);
+  autoListenRef.current = autoListen;
+
+  // Scroll to bottom of chat whenever messages or interim speech changes
+  useEffect(() => {
+    if (chatBottomRef.current) {
+      chatBottomRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, interimText]);
 
   // Sync external open trigger (e.g. from navbar or search mic)
   useEffect(() => {
@@ -79,12 +115,19 @@ export default function AiVoiceAssistant({
     rec.onerror = (event) => {
       console.warn('Speech recognition error:', event.error);
       if (event.error === 'not-allowed') {
-        setFeedback({
-          type: 'warning',
-          text: lang === 'ta'
-            ? 'மைக்ரோஃபோன் அனுமதி மறுக்கப்பட்டுள்ளது. உலாவி அமைப்புகளில் அனுமதியை இயக்கவும்.'
-            : 'Microphone permission denied. Please allow microphone access in browser settings.'
-        });
+        const errorMsg = lang === 'ta'
+          ? 'மைக்ரோஃபோன் அனுமதி மறுக்கப்பட்டுள்ளது. உலாவி அமைப்புகளில் அனுமதியை இயக்கவும்.'
+          : 'Microphone permission denied. Please allow microphone access in browser settings.';
+        setMessages(prev => [
+          ...prev,
+          {
+            id: `err_${Date.now()}`,
+            sender: 'ai',
+            isError: true,
+            text: errorMsg,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }
+        ]);
       }
       setIsListening(false);
     };
@@ -117,7 +160,6 @@ export default function AiVoiceAssistant({
     stopSpeaking();
     setIsOpen(false);
     setInterimText('');
-    setFeedback(null);
   };
 
   // Toggle microphone listening
@@ -129,8 +171,9 @@ export default function AiVoiceAssistant({
 
     if (isListening) {
       stopListening();
-      if (transcript.trim()) {
-        executeCommand(transcript.trim());
+      const currentFullText = (finalTranscriptAccumulator.current + ' ' + interimText).trim();
+      if (currentFullText) {
+        executeCommand(currentFullText, true);
       }
     } else {
       startListening();
@@ -142,7 +185,6 @@ export default function AiVoiceAssistant({
     finalTranscriptAccumulator.current = '';
     setTranscript('');
     setInterimText('');
-    setFeedback(null);
     stopSpeaking();
 
     try {
@@ -162,16 +204,31 @@ export default function AiVoiceAssistant({
   };
 
   // Process and execute recognized natural language command
-  const executeCommand = useCallback((rawPhrase) => {
+  const executeCommand = useCallback((rawPhrase, fromVoice = false) => {
     if (!rawPhrase || !rawPhrase.trim()) return;
+    const cleanPhrase = rawPhrase.trim();
 
-    const result = parseVoiceCommand(rawPhrase, catalogItems);
+    // 1. Append User Message to Chat
+    const userMsg = {
+      id: `user_${Date.now()}`,
+      sender: 'user',
+      text: cleanPhrase,
+      isVoice: fromVoice,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    setMessages(prev => [...prev, userMsg]);
+    setTranscript('');
+    setInterimText('');
+    finalTranscriptAccumulator.current = '';
+
+    // 2. Intelligent NLP Parse
+    const result = parseVoiceCommand(cleanPhrase, catalogItems);
     const spokenMessage = lang === 'ta' ? result.feedbackTamil : result.feedbackText;
 
     // Asynchronously log to data collection pipeline for Transformer training
     try {
       api.post('/voice/log', {
-        utterance: rawPhrase,
+        utterance: cleanPhrase,
         lang,
         action: result.action,
         matchedItems: (result.items || []).map(i => ({
@@ -185,177 +242,192 @@ export default function AiVoiceAssistant({
       }).catch(() => {});
     } catch {}
 
+    // 3. Register any dynamic / custom items detected so they persist in the product list
+    if (onAddCustomItem && result.items && result.items.length > 0) {
+      result.items.forEach(({ item }) => {
+        if (item.isCustom) {
+          onAddCustomItem(item);
+        }
+      });
+    }
+
+    // 4. Execute Actions & Directly Update the Product List
     if (result.action === 'ADD_OR_UPDATE') {
       result.items.forEach(({ item, qty }) => {
         onQtyChange(item.id, qty);
       });
       playSound('success');
-      setFeedback({
-        type: 'success',
-        text: spokenMessage,
-        items: result.items
-      });
-      if (voiceEnabled) {
-        setIsSpeaking(true);
-        speakText(spokenMessage, { lang, onEnd: () => setIsSpeaking(false) });
-      }
     } else if (result.action === 'REMOVE') {
       result.items.forEach(({ item }) => {
         onQtyChange(item.id, 0);
       });
       playSound('success');
-      setFeedback({
-        type: 'info',
-        text: spokenMessage,
-        items: result.items
-      });
-      if (voiceEnabled) {
-        setIsSpeaking(true);
-        speakText(spokenMessage, { lang, onEnd: () => setIsSpeaking(false) });
-      }
     } else if (result.action === 'CLEAR') {
       onClearList();
       playSound('clear');
-      setFeedback({
-        type: 'info',
-        text: spokenMessage
-      });
-      if (voiceEnabled) {
-        setIsSpeaking(true);
-        speakText(spokenMessage, { lang, onEnd: () => setIsSpeaking(false) });
-      }
     } else if (result.action === 'READ_LIST') {
-      setFeedback({
-        type: 'info',
-        text: spokenMessage
+      readShoppingListAloud(selectedItems, lang, () => {
+        setIsSpeaking(false);
+        if (autoListenRef.current) startListening();
       });
-      setIsSpeaking(true);
-      readShoppingListAloud(selectedItems, lang, () => setIsSpeaking(false));
     } else if (result.action === 'WHATSAPP') {
       onShareWhatsApp();
-      setFeedback({
-        type: 'success',
-        text: spokenMessage
-      });
-      if (voiceEnabled) {
-        setIsSpeaking(true);
-        speakText(spokenMessage, { lang, onEnd: () => setIsSpeaking(false) });
-      }
     } else if (result.action === 'SAVE_LIST') {
       onSaveHistory();
-      setFeedback({
-        type: 'success',
-        text: spokenMessage
-      });
-      if (voiceEnabled) {
-        setIsSpeaking(true);
-        speakText(spokenMessage, { lang, onEnd: () => setIsSpeaking(false) });
-      }
     } else if (result.action === 'SEARCH') {
       if (onSearch && result.searchTerm) {
         onSearch(result.searchTerm);
       }
-      setFeedback({
-        type: 'info',
-        text: spokenMessage
-      });
-      if (voiceEnabled) {
-        setIsSpeaking(true);
-        speakText(spokenMessage, { lang, onEnd: () => setIsSpeaking(false) });
-      }
-    } else {
-      // Unknown command
-      setFeedback({
-        type: 'warning',
-        text: spokenMessage
-      });
-      if (voiceEnabled) {
-        setIsSpeaking(true);
-        speakText(spokenMessage, { lang, onEnd: () => setIsSpeaking(false) });
-      }
     }
-  }, [catalogItems, lang, voiceEnabled, onQtyChange, onClearList, onSaveHistory, onShareWhatsApp, onSearch, selectedItems]);
+
+    // 5. Append AI Assistant Response Message to Chat
+    const aiMsg = {
+      id: `ai_${Date.now()}`,
+      sender: 'ai',
+      text: spokenMessage,
+      action: result.action,
+      items: result.items || [],
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    setMessages(prev => [...prev, aiMsg]);
+
+    // 6. Text-To-Speech Audio Feedback
+    if (voiceEnabled && result.action !== 'READ_LIST') {
+      setIsSpeaking(true);
+      speakText(spokenMessage, {
+        lang,
+        onEnd: () => {
+          setIsSpeaking(false);
+          // Auto-resume listening if Hands-Free Mode is enabled
+          if (autoListenRef.current) {
+            setTimeout(() => {
+              startListening();
+            }, 300);
+          }
+        },
+        onError: () => {
+          setIsSpeaking(false);
+          if (autoListenRef.current) {
+            setTimeout(() => {
+              startListening();
+            }, 300);
+          }
+        }
+      });
+    } else if (autoListenRef.current && result.action !== 'READ_LIST') {
+      // If voice feedback is muted but autoListen is on, restart listening after short delay
+      setTimeout(() => {
+        startListening();
+      }, 700);
+    }
+  }, [catalogItems, lang, voiceEnabled, onQtyChange, onAddCustomItem, onClearList, onSaveHistory, onShareWhatsApp, onSearch, selectedItems]);
 
   // Handle manual command text submit
   const handleTextSubmit = (e) => {
     e.preventDefault();
     if (!textInput.trim()) return;
-    setTranscript(textInput);
-    executeCommand(textInput);
+    executeCommand(textInput.trim(), false);
     setTextInput('');
+  };
+
+  // Helper to adjust quantity directly from chat card
+  const handleCardQtyAdjust = (item, delta) => {
+    const current = quantities[item.id] || 0;
+    const step = item.category === 'dairy' ? 0.25 : 0.25;
+    const updated = Math.max(0, Math.round((current + delta * step) * 1000) / 1000);
+    onQtyChange(item.id, updated);
+  };
+
+  // Helper to remove item directly from chat card
+  const handleCardRemove = (item) => {
+    onQtyChange(item.id, 0);
   };
 
   // Quick command suggestions
   const samplePrompts = lang === 'ta' ? [
-    'ஒரு கிலோ தக்காளி, அரை கிலோ வெங்காயம்',
+    '2 கிலோ தக்காளி, 1 கிலோ வெங்காயம்',
     'அரை லிட்டர் பால், 250 கிராம் வெண்ணெய்',
     'கால் கிலோ இஞ்சி, 100 கிராம் பச்சை மிளகாய்',
+    '2 பாக்கெட் பிரட்',
     'பட்டியலை வாசி',
     'பட்டியலை அழி'
   ] : [
-    'Add 1kg Tomato and 500g Onion',
-    'Add 2 Liters Milk and 250g Butter',
-    'Add quarter kg Ginger, 100g Green Chilli',
-    'Read my shopping list',
+    'Add 2kg Tomato and 1kg Onion',
+    'Add 1 Liter Milk and 500g Butter',
+    'Add 250g Green Chilli and 100g Ginger',
+    'Add 2 packets Bread',
+    'What is in my list?',
     'Clear list'
   ];
 
   return (
     <>
-      {/* ── Floating AI Voice Button (FAB) ── */}
+      {/* ── Floating AI Voice Chat Button (FAB) ── */}
       <button
         type="button"
         className={`ai-voice-fab ${isListening ? 'ai-voice-fab--listening' : ''} ${isSpeaking ? 'ai-voice-fab--speaking' : ''}`}
         onClick={() => setIsOpen(true)}
-        title="Open AI Voice Assistant (English & தமிழ்)"
-        aria-label="AI Voice Assistant"
+        title="Open AI Voice Chat Assistant (English & தமிழ்)"
+        aria-label="AI Voice Chat Assistant"
       >
         <span className="fab-pulse-ring" />
         <span className="fab-pulse-ring fab-pulse-ring--delay" />
         <div className="fab-icon-inner">
           <span className="fab-icon">🎙️</span>
         </div>
-        <span className="fab-text">AI Voice</span>
-        <span className="fab-badge">தமிழ்</span>
+        <div className="fab-label-group">
+          <span className="fab-text">AI Voice Chat</span>
+          <span className="fab-subtext">Direct Add to List</span>
+        </div>
+        <span className="fab-badge">தமிழ் / EN</span>
       </button>
 
-      {/* ── Modal Interface ── */}
+      {/* ── Modal / Voice Chat Window ── */}
       {isOpen && (
         <div className="ai-modal-overlay fade-in" onClick={handleClose}>
           <div
-            className="ai-modal-card glass-card slide-up"
+            className="ai-chat-window glass-card slide-up"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
           >
-            {/* Header */}
-            <div className="ai-modal-header">
-              <div className="ai-brand-group">
-                <div className="ai-brand-icon">🤖</div>
+            {/* ── Chat Header ── */}
+            <div className="ai-chat-header">
+              <div className="ai-chat-brand">
+                <div className="ai-bot-avatar">
+                  <span>🤖</span>
+                  <span className={`ai-bot-status-dot ${isListening ? 'status--listening' : isSpeaking ? 'status--speaking' : 'status--ready'}`} />
+                </div>
                 <div>
-                  <h2 className="ai-modal-title">
-                    VF <span className="text-accent">AI Voice</span> Assistant
-                  </h2>
-                  <p className="ai-modal-sub">
+                  <div className="ai-title-row">
+                    <h2 className="ai-chat-title">
+                      VF <span className="text-accent">Voice AI</span> Assistant
+                    </h2>
+                    <span className="ai-live-pill">Direct Product Add</span>
+                  </div>
+                  <p className="ai-chat-sub">
                     {lang === 'ta'
-                      ? 'காய்கறி, பழங்கள் மற்றும் மளிகைப் பொருட்களை குரல் மூலம் சேர்க்கலாம்'
-                      : 'Speak naturally to add items, change quantities, or manage your list'}
+                      ? 'குரல் வழியே தயாரிப்பு பெயர், கிலோ & அளவு விவரங்களை நேரடியாக பட்டியலில் சேர்க்கலாம்'
+                      : 'Hears product name, kg/liters & details — directly adds to your shopping list'}
                   </p>
                 </div>
               </div>
 
-              <button
-                type="button"
-                className="ai-close-btn"
-                onClick={handleClose}
-                aria-label="Close voice assistant"
-              >
-                ✕
-              </button>
+              <div className="ai-header-actions">
+                <button
+                  type="button"
+                  className="ai-icon-btn ai-close-btn"
+                  onClick={handleClose}
+                  aria-label="Close voice chat"
+                  title="Close Assistant"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
-            {/* Language & Voice Response Controls Bar */}
-            <div className="ai-top-bar">
+            {/* ── Control Bar: Language, TTS, & Hands-Free Mode ── */}
+            <div className="ai-controls-bar">
               <div className="ai-lang-toggle">
                 <button
                   type="button"
@@ -369,182 +441,257 @@ export default function AiVoiceAssistant({
                   className={`ai-lang-pill ${lang === 'ta' ? 'ai-lang-pill--active' : ''}`}
                   onClick={() => setLang('ta')}
                 >
-                  🇮🇳 தமிழ் (Tamil)
+                  🇮🇳 தமிழ்
                 </button>
               </div>
 
-              <button
-                type="button"
-                className={`ai-tts-toggle ${voiceEnabled ? 'ai-tts-toggle--on' : ''}`}
-                onClick={() => {
-                  if (voiceEnabled) stopSpeaking();
-                  setVoiceEnabled(!voiceEnabled);
-                }}
-                title={voiceEnabled ? 'Mute AI voice responses' : 'Enable AI voice responses'}
-              >
-                {voiceEnabled ? '🔊 Voice Feedback: ON' : '🔇 Voice Feedback: OFF'}
-              </button>
+              <div className="ai-toggles-group">
+                {/* Voice Audio Feedback Toggle */}
+                <button
+                  type="button"
+                  className={`ai-toggle-pill ${voiceEnabled ? 'ai-toggle-pill--active' : ''}`}
+                  onClick={() => {
+                    if (voiceEnabled) stopSpeaking();
+                    setVoiceEnabled(!voiceEnabled);
+                  }}
+                  title={voiceEnabled ? 'Mute AI voice audio' : 'Enable AI voice audio'}
+                >
+                  {voiceEnabled ? '🔊 Voice ON' : '🔇 Voice OFF'}
+                </button>
+
+                {/* Auto-Listen / Hands-Free Toggle */}
+                <button
+                  type="button"
+                  className={`ai-toggle-pill ai-autolisten-pill ${autoListen ? 'ai-autolisten--on' : ''}`}
+                  onClick={() => {
+                    const next = !autoListen;
+                    setAutoListen(next);
+                    if (next && !isListening) startListening();
+                  }}
+                  title="Hands-free auto-listen: Automatically resumes listening after each product is added"
+                >
+                  {autoListen ? '⚡ Hands-Free: ON' : '🎙️ Hands-Free: OFF'}
+                </button>
+              </div>
             </div>
 
-            {/* Glowing Interactive AI Voice Orb Visualizer */}
-            <div className="ai-orb-container">
-              <div
-                className={`ai-orb ${isListening ? 'ai-orb--listening' : ''} ${isSpeaking ? 'ai-orb--speaking' : ''}`}
-                onClick={toggleListening}
-                role="button"
-                tabIndex={0}
-                title={isListening ? 'Click to stop listening' : 'Click to start speaking'}
-              >
-                <div className="ai-orb-core">
-                  <span className="ai-orb-icon">
+            {/* ── Visualizer & Speech Recognition Banner ── */}
+            <div className={`ai-speech-status-banner ${isListening ? 'status-banner--listening' : isSpeaking ? 'status-banner--speaking' : ''}`}>
+              <div className="ai-visualizer-left">
+                <div
+                  className={`ai-mini-orb ${isListening ? 'ai-mini-orb--listening' : isSpeaking ? 'ai-mini-orb--speaking' : ''}`}
+                  onClick={toggleListening}
+                  role="button"
+                  tabIndex={0}
+                  title={isListening ? 'Tap to finish speaking' : 'Tap to start speaking'}
+                >
+                  <span className="mini-orb-icon">
                     {isSpeaking ? '🔊' : isListening ? '🎙️' : '✨'}
                   </span>
                 </div>
-                <div className="ai-orb-wave wave-1" />
-                <div className="ai-orb-wave wave-2" />
-                <div className="ai-orb-wave wave-3" />
-              </div>
 
-              {/* Status Indicator */}
-              <div className="ai-status-row">
-                {isListening ? (
-                  <div className="ai-status-badge ai-status--listening">
-                    <span className="dot pulse" />
-                    <span>{lang === 'ta' ? 'கேட்கிறது... பேசுங்கள்' : 'Listening... Speak now'}</span>
+                <div className="ai-speech-text-wrap">
+                  <div className="ai-speech-status-title">
+                    {isListening ? (
+                      <span className="text-listening">
+                        <span className="dot pulse" /> {lang === 'ta' ? 'கேட்கிறது... பேசுங்கள்' : 'Listening... Speak now'}
+                      </span>
+                    ) : isSpeaking ? (
+                      <span className="text-speaking">
+                        <span className="dot pulse" /> {lang === 'ta' ? 'AI பேசுகிறது...' : 'AI Speaking...'}
+                      </span>
+                    ) : (
+                      <span className="text-ready">
+                        {lang === 'ta' ? 'பேச மைக் தட்டவும் அல்லது தட்டச்சு செய்யவும்' : 'Ready — Tap mic or type below to add products'}
+                      </span>
+                    )}
                   </div>
-                ) : isSpeaking ? (
-                  <div className="ai-status-badge ai-status--speaking">
-                    <span className="dot pulse" />
-                    <span>{lang === 'ta' ? 'AI பேசுகிறது...' : 'AI Speaking...'}</span>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    className="ai-mic-cta-btn"
-                    onClick={toggleListening}
-                  >
-                    🎙️ {lang === 'ta' ? 'மைக் தட்டி பேசவும்' : 'Tap to Speak'}
-                  </button>
-                )}
-              </div>
-            </div>
 
-            {/* Live Audio Wave Bars (When Listening) */}
-            {isListening && (
-              <div className="ai-wave-bars">
-                <span className="wave-bar bar-1" />
-                <span className="wave-bar bar-2" />
-                <span className="wave-bar bar-3" />
-                <span className="wave-bar bar-4" />
-                <span className="wave-bar bar-5" />
-                <span className="wave-bar bar-6" />
-                <span className="wave-bar bar-7" />
-                <span className="wave-bar bar-8" />
+                  {/* Real-time Live Speech Transcript */}
+                  {(transcript || interimText) ? (
+                    <div className="ai-live-transcript">
+                      <strong>{transcript}</strong> <span className="ai-interim">{interimText}</span>
+                    </div>
+                  ) : isListening ? (
+                    <div className="ai-live-hint">
+                      {lang === 'ta'
+                        ? 'எ.கா: "2 கிலோ தக்காளி மற்றும் 1 கிலோ வெங்காயம் சேர்"'
+                        : 'e.g., "Add 2kg Tomato, 1kg Onion and 500g Green Chilli"'}
+                    </div>
+                  ) : null}
+                </div>
               </div>
-            )}
 
-            {/* Spoken Transcript Box */}
-            <div className="ai-transcript-box">
-              <div className="ai-transcript-label">
-                <span>💬 {lang === 'ta' ? 'நீங்கள் கூறியது' : 'Recognized Speech'}:</span>
-                {isListening && <span className="ai-live-tag">LIVE</span>}
-              </div>
-              <div className="ai-transcript-content">
-                {transcript || interimText ? (
-                  <p>
-                    <strong>{transcript}</strong>{' '}
-                    <span className="ai-interim">{interimText}</span>
-                  </p>
-                ) : (
-                  <p className="ai-placeholder">
-                    {isListening
-                      ? (lang === 'ta' ? 'உங்கள் குரலை கேட்கிறது...' : 'Listening to your voice...')
-                      : (lang === 'ta' ? 'எடுத்துக்காட்டு: "1 கிலோ தக்காளி, அரை கிலோ வெங்காயம்"' : 'Example: "Add 1kg tomato, 500g onion, and 2L milk"')}
-                  </p>
-                )}
-              </div>
+              {/* Reactive Wave Bars (When Listening) */}
+              {isListening && (
+                <div className="ai-wave-bars">
+                  <span className="wave-bar bar-1" />
+                  <span className="wave-bar bar-2" />
+                  <span className="wave-bar bar-3" />
+                  <span className="wave-bar bar-4" />
+                  <span className="wave-bar bar-5" />
+                  <span className="wave-bar bar-6" />
+                </div>
+              )}
 
               {isListening && (
-                <div className="ai-transcript-actions">
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-sm"
-                    onClick={toggleListening}
-                  >
-                    ✓ {lang === 'ta' ? 'முடித்தேன் (முடிவு செய்)' : 'Done Speaking'}
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm ai-done-btn"
+                  onClick={toggleListening}
+                >
+                  ✓ {lang === 'ta' ? 'முடிந்தது' : 'Done'}
+                </button>
               )}
             </div>
 
-            {/* AI Feedback & Parsed Items Notification */}
-            {feedback && (
-              <div className={`ai-feedback-banner ai-feedback--${feedback.type} fade-in`}>
-                <div className="ai-feedback-text">
-                  <span className="ai-feedback-icon">
-                    {feedback.type === 'success' ? '✅' : feedback.type === 'warning' ? '⚠️' : 'ℹ️'}
-                  </span>
-                  <span>{feedback.text}</span>
-                </div>
+            {/* ── Conversational Chat Messages Stream ── */}
+            <div className="ai-chat-messages">
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`chat-bubble-row ${msg.sender === 'user' ? 'chat-row--user' : 'chat-row--ai'} fade-in`}
+                >
+                  {msg.sender === 'ai' && (
+                    <div className="chat-avatar-ai">🤖</div>
+                  )}
 
-                {/* Parsed Item Tags Preview */}
-                {feedback.items && feedback.items.length > 0 && (
-                  <div className="ai-parsed-chips">
-                    {feedback.items.map((pi, idx) => (
-                      <div key={idx} className={`ai-parsed-chip ${pi.isRemove ? 'ai-parsed-chip--remove' : ''}`}>
-                        <span>{pi.item.emoji}</span>
-                        <strong>
-                          {lang === 'ta' && pi.item.name_ta ? pi.item.name_ta : (getEnglishName(pi.item) || pi.item.name)}
-                          {getTanglishName(pi.item) && (
-                            <span style={{ opacity: 0.8, fontWeight: 400, marginLeft: 4 }}>
-                              ({getTanglishName(pi.item)})
-                            </span>
-                          )}
-                        </strong>
-                        {!pi.isRemove && (
-                          <span className="ai-parsed-qty">
-                            {pi.isLiquid ? `${pi.qty} L` : `${pi.qty >= 1 ? `${pi.qty} kg` : `${Math.round(pi.qty * 1000)} g`}`}
-                          </span>
-                        )}
-                        {pi.isRemove && <span className="ai-parsed-removed">Removed</span>}
-                        {pi.confidence && (
-                          <span
-                            title={`Transformer Confidence: ${Math.round(pi.confidence * 100)}%`}
-                            style={{
-                              marginLeft: '6px',
-                              fontSize: '0.72rem',
-                              padding: '2px 6px',
-                              borderRadius: '4px',
-                              background: 'rgba(16, 185, 129, 0.15)',
-                              color: '#059669',
-                              fontWeight: 600
-                            }}
-                          >
-                            ⚡ {Math.round(pi.confidence * 100)}%
-                          </span>
-                        )}
+                  <div className={`chat-bubble ${msg.sender === 'user' ? 'bubble--user' : 'bubble--ai'} ${msg.isError ? 'bubble--error' : ''}`}>
+                    {/* Header info */}
+                    <div className="chat-bubble-meta">
+                      <span className="chat-bubble-sender">
+                        {msg.sender === 'user' ? (msg.isVoice ? '🎙️ You (Voice)' : '💬 You') : '✨ VF Voice AI'}
+                      </span>
+                      <span className="chat-bubble-time">{msg.timestamp}</span>
+                    </div>
+
+                    {/* Message Body */}
+                    <div className="chat-bubble-text">
+                      {lang === 'ta' && msg.textTa ? msg.textTa : msg.text}
+                    </div>
+
+                    {/* Interactive Product Action Cards (Rendered for parsed products) */}
+                    {msg.items && msg.items.length > 0 && (
+                      <div className="chat-items-grid">
+                        {msg.items.map((pi, idx) => {
+                          const currentInList = quantities[pi.item.id] || 0;
+                          const displayName = lang === 'ta' && pi.item.name_ta
+                            ? pi.item.name_ta
+                            : (getEnglishName(pi.item) || pi.item.name);
+                          const tanglish = getTanglishName(pi.item);
+
+                          return (
+                            <div
+                              key={idx}
+                              className={`chat-product-card ${pi.isRemove ? 'card--removed' : 'card--added'}`}
+                            >
+                              <div className="card-top">
+                                <span className="card-emoji">{pi.item.emoji || '🛍️'}</span>
+                                <div className="card-info">
+                                  <div className="card-name-row">
+                                    <span className="card-name">{displayName}</span>
+                                    {tanglish && !displayName.toLowerCase().includes(tanglish.toLowerCase()) && (
+                                      <span className="card-tanglish">({tanglish})</span>
+                                    )}
+                                  </div>
+                                  <div className="card-sub-info">
+                                    <span className="card-cat-badge">{pi.item.category || 'grocery'}</span>
+                                    {pi.item.isCustom && (
+                                      <span className="card-custom-badge">✨ Custom Item</span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="card-qty-tag">
+                                  {pi.unit === 'packet' ? `${pi.qty} pkt` :
+                                   pi.unit === 'bunch' ? `${pi.qty} bunch` :
+                                   pi.unit === 'piece' ? `${pi.qty} pcs` :
+                                   pi.isLiquid ? `${pi.qty} L` :
+                                   pi.qty >= 1 ? `${pi.qty} kg` : `${Math.round(pi.qty * 1000)} g`}
+                                </div>
+                              </div>
+
+                              {/* Direct Live List Adjustment Controls */}
+                              {!pi.isRemove && (
+                                <div className="card-actions-bar">
+                                  <span className="card-status-label">
+                                    ✓ In Shopping List: <strong>{currentInList > 0 ? (pi.isLiquid ? `${currentInList} L` : `${currentInList} kg`) : '0'}</strong>
+                                  </span>
+
+                                  <div className="card-quick-btns">
+                                    <button
+                                      type="button"
+                                      className="card-btn-mini"
+                                      onClick={() => handleCardQtyAdjust(pi.item, -1)}
+                                      title="Decrease quantity by 250g"
+                                    >
+                                      −
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="card-btn-mini"
+                                      onClick={() => handleCardQtyAdjust(pi.item, 1)}
+                                      title="Increase quantity by 250g"
+                                    >
+                                      +
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="card-btn-mini card-btn-mini--remove"
+                                      onClick={() => handleCardRemove(pi.item)}
+                                      title="Remove from list"
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+                    )}
 
-            {/* Sample Command Chips */}
-            <div className="ai-prompts-section">
-              <span className="ai-prompts-title">
-                💡 {lang === 'ta' ? 'முயற்சி செய்ய சில குரல் கட்டளைகள்' : 'Quick Voice Suggestions'}:
-              </span>
-              <div className="ai-prompts-scroll">
+                    {/* Preset prompt buttons in welcome message */}
+                    {msg.prompts && (
+                      <div className="chat-welcome-prompts">
+                        <span className="prompts-label">
+                          💡 {lang === 'ta' ? 'முயற்சி செய்ய கிளிக் செய்யுங்கள்' : 'Tap to test Voice AI'}:
+                        </span>
+                        <div className="prompts-chips-list">
+                          {(lang === 'ta' && msg.promptsTa ? msg.promptsTa : msg.prompts).map((prompt, pIdx) => (
+                            <button
+                              key={pIdx}
+                              type="button"
+                              className="chat-prompt-pill"
+                              onClick={() => executeCommand(prompt, false)}
+                            >
+                              🎙️ {prompt}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {msg.sender === 'user' && (
+                    <div className="chat-avatar-user">👤</div>
+                  )}
+                </div>
+              ))}
+              <div ref={chatBottomRef} />
+            </div>
+
+            {/* ── Quick Prompts Floating Ribbon ── */}
+            <div className="ai-prompts-ribbon">
+              <span className="ribbon-title">💡 Quick Voice:</span>
+              <div className="ribbon-scroll">
                 {samplePrompts.map((prompt, idx) => (
                   <button
                     key={idx}
                     type="button"
-                    className="ai-prompt-chip"
-                    onClick={() => {
-                      setTranscript(prompt);
-                      executeCommand(prompt);
-                    }}
+                    className="ai-ribbon-chip"
+                    onClick={() => executeCommand(prompt, false)}
                   >
                     🎙️ {prompt}
                   </button>
@@ -552,23 +699,41 @@ export default function AiVoiceAssistant({
               </div>
             </div>
 
-            {/* Text Input Fallback (for quiet environments or no mic access) */}
-            <form className="ai-manual-input-form" onSubmit={handleTextSubmit}>
-              <input
-                type="text"
-                className="ai-manual-input"
-                placeholder={lang === 'ta' ? 'அல்லது இங்கே தட்டச்சு செய்து கட்டளையிடலாம்...' : 'Or type a command (e.g. Add 1kg tomato & 500g onion)...'}
-                value={textInput}
-                onChange={(e) => setTextInput(e.target.value)}
-              />
+            {/* ── Chat Input & Mic Bar ── */}
+            <div className="ai-chat-input-bar">
               <button
-                type="submit"
-                className="btn btn-primary btn-sm ai-manual-btn"
-                disabled={!textInput.trim()}
+                type="button"
+                className={`ai-mic-trigger-btn ${isListening ? 'mic-trigger--active' : ''}`}
+                onClick={toggleListening}
+                title={isListening ? 'Click to stop listening' : 'Click to speak products'}
+                aria-label="Toggle Microphone"
               >
-                Send
+                <span className="mic-btn-icon">{isListening ? '⏹️' : '🎙️'}</span>
+                <span className="mic-btn-pulse" />
               </button>
-            </form>
+
+              <form className="ai-text-form" onSubmit={handleTextSubmit}>
+                <input
+                  type="text"
+                  className="ai-chat-text-input"
+                  placeholder={
+                    lang === 'ta'
+                      ? 'பொருட்களை குரல் மூலமாகவோ அல்லது தட்டச்சு செய்தோ சேர்க்கலாம்...'
+                      : 'Speak or type items (e.g., Add 2kg Tomato, 1kg Onion and 500g Beans)...'
+                  }
+                  value={textInput}
+                  onChange={(e) => setTextInput(e.target.value)}
+                />
+                <button
+                  type="submit"
+                  className="btn btn-primary ai-chat-send-btn"
+                  disabled={!textInput.trim()}
+                >
+                  <span>Send</span>
+                  <span className="send-arrow">➔</span>
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       )}

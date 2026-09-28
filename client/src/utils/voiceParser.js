@@ -10,7 +10,16 @@ import { findMatchingProductWithTransformer } from './transformerMatcher.js';
 
 // Common Tamil & Tanglish number & fraction words
 const TAMIL_QTY_MAP = [
-  { words: ['ஒரு கிலோ', 'ஒன்னு கிலோ', '1 கிலோ', 'ஒரு', 'oru kilo', 'onnu kilo', 'one kilo', '1 kilo'], qty: 1.0 },
+  // Compound fractions
+  { words: ['ஒன்றரை கிலோ', 'ஒன்னரை கிலோ', '1.5 கிலோ', 'ondrarai kilo', 'onnara kilo', 'one and half kilo'], qty: 1.5 },
+  { words: ['ரெண்டரை கிலோ', 'இரண்டரை கிலோ', '2.5 கிலோ', 'rendara kilo', 'rendarai kilo', 'two and half kilo'], qty: 2.5 },
+  { words: ['மூன்றரை கிலோ', 'மூணரை கிலோ', '3.5 கிலோ', 'moonara kilo', 'three and half kilo'], qty: 3.5 },
+  { words: ['நாலரை கிலோ', 'நான்கரை கிலோ', '4.5 கிலோ', 'naalara kilo', 'four and half kilo'], qty: 4.5 },
+  { words: ['அஞ்சரை கிலோ', 'ஐந்தரை கிலோ', '5.5 கிலோ', 'anjara kilo', 'five and half kilo'], qty: 5.5 },
+  { words: ['ஒன்றரை லிட்டர்', 'ஒன்னரை லிட்டர்', '1.5 லிட்டர்', 'ondrarai liter'], qty: 1.5, isLiquid: true },
+  { words: ['ரெண்டரை லிட்டர்', 'இரண்டரை லிட்டர்', '2.5 லிட்டர்', 'rendara liter'], qty: 2.5, isLiquid: true },
+  // Standard fractions and wholes
+  { words: ['ஒரு கிலோ', 'ஒன்னு கிலோ', '1 கிலோ', 'ஒரு', 'ஒன்னு', 'oru kilo', 'onnu kilo', 'one kilo', '1 kilo'], qty: 1.0 },
   { words: ['அரை கிலோ', 'அர கிலோ', 'அரை', 'ara kilo', 'arai kilo', 'half kilo', 'half kg'], qty: 0.5 },
   { words: ['கால் கிலோ', 'கால்', 'kaal kilo', 'kal kilo', 'quarter kilo'], qty: 0.25 },
   { words: ['முக்கால் கிலோ', 'முக்கால்', 'mukaal kilo', 'mukkaal kilo', 'three quarters'], qty: 0.75 },
@@ -18,12 +27,15 @@ const TAMIL_QTY_MAP = [
   { words: ['மூன்று கிலோ', 'மூணு கிலோ', '3 கிலோ', 'மூணு', 'moonu kilo', 'three kilos'], qty: 3.0 },
   { words: ['நான்கு கிலோ', 'நாலு கிலோ', '4 கிலோ', 'நாலு', 'naalu kilo', 'four kilos'], qty: 4.0 },
   { words: ['ஐந்து கிலோ', 'அஞ்சு கிலோ', '5 கிலோ', 'அஞ்சு', 'anju kilo', 'five kilos'], qty: 5.0 },
+  { words: ['பத்து கிலோ', '10 கிலோ', 'pathu kilo', 'ten kilos'], qty: 10.0 },
+  // Grams
   { words: ['100 கிராம்', 'நூறு கிராம்', '100 gram', 'nooru gram'], qty: 0.1 },
   { words: ['50 கிராம்', 'ஐம்பது கிராம்', 'அம்பது கிராம்', '50 gram'], qty: 0.05 },
   { words: ['200 கிராம்', 'இருநூறு கிராம்', '200 gram'], qty: 0.2 },
   { words: ['250 கிராம்', '250 gram'], qty: 0.25 },
   { words: ['500 கிராம்', '500 gram'], qty: 0.5 },
   { words: ['750 கிராம்', '750 gram'], qty: 0.75 },
+  // Liters & ml
   { words: ['ஒரு லிட்டர்', '1 லிட்டர்', 'oru liter', 'one liter'], qty: 1.0, isLiquid: true },
   { words: ['அரை லிட்டர்', 'அர லிட்டர்', 'ara liter', 'half liter'], qty: 0.5, isLiquid: true },
   { words: ['கால் லிட்டர்', 'kaal liter'], qty: 0.25, isLiquid: true },
@@ -32,6 +44,11 @@ const TAMIL_QTY_MAP = [
   { words: ['250 மில்லி', '250 மி.லி', '250 ml'], qty: 0.25, isLiquid: true },
   { words: ['100 மில்லி', '100 மி.லி', '100 ml'], qty: 0.1, isLiquid: true },
   { words: ['50 மில்லி', '50 மி.லி', '50 ml'], qty: 0.05, isLiquid: true },
+  // Packets & Bunches
+  { words: ['ஒரு பாக்கெட்', '1 பாக்கெட்', 'oru packet'], qty: 1.0, unit: 'packet' },
+  { words: ['இரண்டு பாக்கெட்', 'ரெண்டு பாக்கெட்', '2 பாக்கெட்'], qty: 2.0, unit: 'packet' },
+  { words: ['ஒரு கட்டு', '1 கட்டு', 'oru kattu'], qty: 1.0, unit: 'bunch' },
+  { words: ['இரண்டு கட்டு', 'ரெண்டு கட்டு', '2 கட்டு'], qty: 2.0, unit: 'bunch' },
 ];
 
 // Common English number & fraction words
@@ -141,23 +158,102 @@ export function normalizeText(text) {
 }
 
 /**
- * Extract weight/liter quantity from a snippet of text.
- * Returns { qty: number, isLiquid: boolean, matchedStr: string }
+ * Extract weight/liter/count quantity from a snippet of text.
+ * Returns { qty: number, isLiquid: boolean, unit: string, matchedStr: string }
  */
 export function extractQuantity(snippet) {
   const norm = snippet.toLowerCase();
 
-  // 1. Check Tamil phrase maps first
+  // 1. Compound expressions: "1 kg 500 grams", "2 kg 250 g", "1 kilo 500 gram", "1 kg and 500g"
+  const compoundMatch = norm.match(/(\d+(?:\.\d+)?)\s*(?:kg|kilo|kilos|கிலோ)\s*(?:and\s+)?(\d+(?:\.\d+)?)\s*(?:grams?|gm|g|கிராம்)/i);
+  if (compoundMatch) {
+    const k = parseFloat(compoundMatch[1]);
+    const g = parseFloat(compoundMatch[2]);
+    const total = Math.round((k + g / 1000) * 1000) / 1000;
+    return { qty: total, isLiquid: false, unit: 'kg', matchedStr: compoundMatch[0] };
+  }
+
+  // Compound Tamil text like "ஒரு கிலோ 500 கிராம்"
+  const tamilCompoundMatch = norm.match(/(?:ஒரு|1|இரண்டு|ரெண்டு|2|மூன்று|மூணு|3)\s*கிலோ\s*(\d+)\s*கிராம்/);
+  if (tamilCompoundMatch) {
+    let k = 1;
+    if (norm.includes('இரண்டு') || norm.includes('ரெண்டு') || norm.includes('2 கிலோ')) k = 2;
+    if (norm.includes('மூன்று') || norm.includes('மூணு') || norm.includes('3 கிலோ')) k = 3;
+    const g = parseFloat(tamilCompoundMatch[1]);
+    return { qty: k + g / 1000, isLiquid: false, unit: 'kg', matchedStr: tamilCompoundMatch[0] };
+  }
+
+  // 2. Exact numbers with units (Grams, Kg, Liters, Ml, Packets, Bunches, Pieces)
+  // Grams: "500g", "500 grams", "250 g", "100 g", "50 g", "250 கிராம்"
+  const gramMatch = norm.match(/(\d+(?:\.\d+)?)\s*(?:grams?|gm|g|கிராம்)/i);
+  if (gramMatch) {
+    const g = parseFloat(gramMatch[1]);
+    return { qty: Math.round((g / 1000) * 1000) / 1000, isLiquid: false, unit: 'kg', matchedStr: gramMatch[0] };
+  }
+
+  // Milliliters: "500 ml", "250ml", "100 மில்லி"
+  const mlMatch = norm.match(/(\d+(?:\.\d+)?)\s*(?:ml|milliliters?|மில்லி)/i);
+  if (mlMatch) {
+    const ml = parseFloat(mlMatch[1]);
+    return { qty: Math.round((ml / 1000) * 1000) / 1000, isLiquid: true, unit: 'L', matchedStr: mlMatch[0] };
+  }
+
+  // Kilograms: "1 kg", "2.5 kilos", "1.5 kg", "2 கிலோ"
+  const kgMatch = norm.match(/(\d+(?:\.\d+)?)\s*(?:kg|kilo|kilos|kgs|கிலோ)/i);
+  if (kgMatch) {
+    const kg = parseFloat(kgMatch[1]);
+    return { qty: kg, isLiquid: false, unit: 'kg', matchedStr: kgMatch[0] };
+  }
+
+  // Liters: "1 liter", "2 litres", "1.5 l", "2 லிட்டர்"
+  const lMatch = norm.match(/(\d+(?:\.\d+)?)\s*(?:liters?|litres?|ltr|லிட்டர்|\bl\b)/i);
+  if (lMatch) {
+    const l = parseFloat(lMatch[1]);
+    return { qty: l, isLiquid: true, unit: 'L', matchedStr: lMatch[0] };
+  }
+
+  // Packets: "2 packets", "1 packet", "1 pkt", "2 pkts", "2 பாக்கெட்"
+  const pktMatch = norm.match(/(\d+(?:\.\d+)?)\s*(?:packets?|pkts?|pkt|பாக்கெட்)/i);
+  if (pktMatch) {
+    return { qty: parseFloat(pktMatch[1]), isLiquid: false, unit: 'packet', matchedStr: pktMatch[0] };
+  }
+
+  // Bunches: "1 bunch", "2 bunches", "2 கட்டு"
+  const bunchMatch = norm.match(/(\d+(?:\.\d+)?)\s*(?:bunches?|bunch|கட்டு)/i);
+  if (bunchMatch) {
+    return { qty: parseFloat(bunchMatch[1]), isLiquid: false, unit: 'bunch', matchedStr: bunchMatch[0] };
+  }
+
+  // Pieces / Count: "2 pieces", "6 pieces", "2 nos", "3 nos"
+  const pieceMatch = norm.match(/(\d+(?:\.\d+)?)\s*(?:pieces?|pcs?|nos|எண்ணிக்கை)/i);
+  if (pieceMatch) {
+    return { qty: parseFloat(pieceMatch[1]), isLiquid: false, unit: 'piece', matchedStr: pieceMatch[0] };
+  }
+
+  // 3. Spoken compounds: "one and a half kg", "one and half kg", "two and a half kilos"
+  const spokenHalfMatch = norm.match(/\b(one|two|three|four|five|1|2|3|4|5)\s*(?:and\s+a?\s*half|and\s*half)\s*(?:kilo|kg|kilos|liters?|litres?|l)?\b/i);
+  if (spokenHalfMatch) {
+    const baseWord = spokenHalfMatch[1].toLowerCase();
+    const base = ENGLISH_WORD_NUMBERS[baseWord] || parseFloat(baseWord) || 1;
+    const isLiquid = /liter|litre|\bl\b/i.test(norm);
+    return { qty: base + 0.5, isLiquid, unit: isLiquid ? 'L' : 'kg', matchedStr: spokenHalfMatch[0] };
+  }
+
+  // 4. Check Tamil & Tanglish phrase maps (sorted by length to match longest first)
   for (const item of TAMIL_QTY_MAP) {
     for (const w of item.words) {
       if (norm.includes(w)) {
-        return { qty: item.qty, isLiquid: !!item.isLiquid, matchedStr: w };
+        return {
+          qty: item.qty,
+          isLiquid: !!item.isLiquid,
+          unit: item.unit || (item.isLiquid ? 'L' : 'kg'),
+          matchedStr: w
+        };
       }
     }
   }
 
-  // 2. Patterns like "1.5 kg", "2.5 kilos", "500 grams", "250 g", "50g", "2 liters", "500 ml"
-  // Fractions: "1/2 kg", "1/4 kg", "3/4 kg"
+  // 5. Fractions: "1/2 kg", "1/4 kg", "3/4 kg", "half kg", "quarter kg"
   const fractionMatch = norm.match(/(?:(\d+)\s+)?(1\/2|1\/4|3\/4|half|quarter|three\s*quarters?)\s*(?:kilo|kg|kilos|liters?|litres?|l)?/i);
   if (fractionMatch) {
     const whole = fractionMatch[1] ? parseFloat(fractionMatch[1]) : 0;
@@ -166,60 +262,93 @@ export function extractQuantity(snippet) {
     if (fracStr.includes('1/4') || fracStr.includes('quarter')) frac = 0.25;
     if (fracStr.includes('3/4') || fracStr.includes('three'))   frac = 0.75;
     const isLiquid = norm.includes('liter') || norm.includes('litre') || norm.includes(' l');
-    return { qty: whole + frac, isLiquid, matchedStr: fractionMatch[0] };
+    return { qty: whole + frac, isLiquid, unit: isLiquid ? 'L' : 'kg', matchedStr: fractionMatch[0] };
   }
 
-  // 3. Decimal or integer with units: "500g", "500 grams", "100 g", "50 g", "250g"
-  const gramMatch = norm.match(/(\d+(?:\.\d+)?)\s*(?:grams?|gm|g|கிராம்)/i);
-  if (gramMatch) {
-    const g = parseFloat(gramMatch[1]);
-    return { qty: Math.round((g / 1000) * 1000) / 1000, isLiquid: false, matchedStr: gramMatch[0] };
-  }
-
-  // 4. Milliliters: "500 ml", "250ml"
-  const mlMatch = norm.match(/(\d+(?:\.\d+)?)\s*(?:ml|milliliters?|மில்லி)/i);
-  if (mlMatch) {
-    const ml = parseFloat(mlMatch[1]);
-    return { qty: Math.round((ml / 1000) * 1000) / 1000, isLiquid: true, matchedStr: mlMatch[0] };
-  }
-
-  // 5. Kilograms: "1 kg", "2.5 kilos", "1 kilo"
-  const kgMatch = norm.match(/(\d+(?:\.\d+)?)\s*(?:kg|kilo|kilos|kgs|கிலோ)/i);
-  if (kgMatch) {
-    const kg = parseFloat(kgMatch[1]);
-    return { qty: kg, isLiquid: false, matchedStr: kgMatch[0] };
-  }
-
-  // 6. Liters: "1 liter", "2 litres", "1.5 l"
-  const lMatch = norm.match(/(\d+(?:\.\d+)?)\s*(?:liters?|litres?|ltr|லிட்டர்|\bl\b)/i);
-  if (lMatch) {
-    const l = parseFloat(lMatch[1]);
-    return { qty: l, isLiquid: true, matchedStr: lMatch[0] };
-  }
-
-  // 7. Word numbers + units: "two kg", "one kilo", "three liters"
+  // 6. Word numbers + units: "two kg", "one kilo", "three liters"
   for (const [word, num] of Object.entries(ENGLISH_WORD_NUMBERS)) {
     const regex = new RegExp(`\\b${word}\\s+(?:kilos?|kg|liters?|litres?|l|கிலோ|லிட்டர்)\\b`, 'i');
     if (regex.test(norm)) {
       const isLiquid = /liter|litre|\bl\b|லிட்டர்/i.test(norm);
-      return { qty: num, isLiquid, matchedStr: `${word} kg` };
+      return { qty: num, isLiquid, unit: isLiquid ? 'L' : 'kg', matchedStr: `${word} kg` };
     }
   }
 
-  // 8. Plain isolated numbers (e.g., "tomato 1", "onion 2", "2 potato")
+  // 7. Plain isolated numbers (e.g., "tomato 1", "onion 2", "2 potato")
   const plainNumMatch = norm.match(/\b(\d+(?:\.\d+)?)\b/);
   if (plainNumMatch) {
     const num = parseFloat(plainNumMatch[1]);
     if (num > 0) {
-      // If user said "50" or "100" or "250" or "500", treat as grams
-      if (num === 50 || num === 100 || num === 250 || num === 500 || num === 750) {
-        return { qty: num / 1000, isLiquid: false, matchedStr: `${num}g` };
+      if (num === 50 || num === 100 || num === 200 || num === 250 || num === 500 || num === 750) {
+        return { qty: num / 1000, isLiquid: false, unit: 'kg', matchedStr: `${num}g` };
       }
-      return { qty: num, isLiquid: false, matchedStr: `${num}` };
+      return { qty: num, isLiquid: false, unit: 'kg', matchedStr: `${num}` };
     }
   }
 
   return null;
+}
+
+/**
+ * Creates a smart dynamic product if a product name spoken by the user is not yet in the catalog.
+ * This guarantees the item can be DIRECTLY added to the product list!
+ */
+export function createDynamicProduct(candidateName, qty = 1, isLiquid = false, unit = 'kg') {
+  if (!candidateName || typeof candidateName !== 'string') return null;
+
+  // Clean candidate text of common filler and action words
+  const cleanName = candidateName
+    .replace(/\b(?:add|put|take|get|buy|include|want|please|need|for|me|in|list|shopping|of|some|more|fresh|சேர்|வாங்கு|போடு|வேண்டும்|வேணும்)\b/gi, ' ')
+    .replace(/[^\w\s\u0B80-\u0BFF]/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!cleanName || cleanName.length < 2) return null;
+
+  // Capitalize each word nicely
+  const formattedName = cleanName
+    .split(/\s+/)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+
+  const lower = cleanName.toLowerCase();
+  let category = 'grocery';
+  let emoji = '🛍️';
+
+  if (/fruit|apple|berry|banana|mango|melon|orange|grape|papaya|guava|lemon|lime|kiwi|dragon|pear|peach|plum|cherry|fig|dates|watermelon/i.test(lower)) {
+    category = 'fruit';
+    emoji = '🍎';
+  } else if (/veg|spinach|keerai|gourd|leaves|chilli|pepper|potato|tomato|onion|cabbage|cauliflower|beans|carrot|radish|beet|cucumber|mushroom|corn|ginger|garlic|inji|poondu/i.test(lower)) {
+    category = 'vegetable';
+    emoji = '🥦';
+  } else if (/milk|curd|cheese|butter|paneer|ghee|cream|yogurt|dairy|paal|vennai|thayir|dahi/i.test(lower) || isLiquid) {
+    category = 'dairy';
+    emoji = isLiquid ? '🥛' : '🧈';
+  } else if (/nut|almond|cashew|walnut|pista|raisin|badam|kaju|peanut|seed/i.test(lower)) {
+    category = 'nuts';
+    emoji = '🥜';
+  } else if (/oil/i.test(lower)) {
+    category = 'grocery';
+    emoji = '🫒';
+  } else if (/rice|flour|wheat|atta|bread|grain/i.test(lower)) {
+    category = 'grocery';
+    emoji = '🌾';
+  }
+
+  const safeId = `voice_${lower.replace(/[^a-z0-9]/g, '_')}_${Date.now() % 100000}`;
+
+  return {
+    id: safeId,
+    name: formattedName,
+    name_ta: '',
+    category,
+    emoji,
+    price_per_kg: 0,
+    isCustom: true,
+    customUnit: unit || (isLiquid ? 'L' : 'kg'),
+    _confidence: 0.88,
+    _matchType: 'AI_DYNAMIC_RECOGNITION'
+  };
 }
 
 /**
@@ -442,22 +571,37 @@ export function parseVoiceCommand(transcript, catalogItems = []) {
       }
     }
 
+    // Dynamic Product Recognition fallback:
+    // If not in catalog, extract product name and details directly so it can be added to the product list!
+    if (!matchedItem && (itemCandidate || cleanSeg)) {
+      const candidateToUse = itemCandidate && itemCandidate.trim().length >= 2 ? itemCandidate : cleanSeg;
+      const dynamicProduct = createDynamicProduct(candidateToUse, qty, qtyResult?.isLiquid, qtyResult?.unit);
+      if (dynamicProduct) {
+        matchedItem = dynamicProduct;
+      }
+    }
+
     if (matchedItem) {
       // Default quantity if not spoken:
       // If removing, qty is 0.
-      // If liquid, default to 1 Liter or 0.5 Liter.
+      // If liquid, default to 1 Liter.
       // If solid, default to 1 kg.
       if (isSegRemove) {
         qty = 0;
       } else if (!qty || qty <= 0) {
-        qty = matchedItem.category === 'dairy' ? 1.0 : 1.0;
+        qty = matchedItem.category === 'dairy' || qtyResult?.isLiquid ? 1.0 : 1.0;
       }
+
+      const isLiquid = matchedItem.category === 'dairy' || !!qtyResult?.isLiquid || matchedItem.customUnit === 'L';
+      const itemUnit = qtyResult?.unit || matchedItem.customUnit || (isLiquid ? 'L' : 'kg');
 
       parsedItems.push({
         item: matchedItem,
         qty: Math.round(qty * 1000) / 1000,
         isRemove: isSegRemove,
-        isLiquid: matchedItem.category === 'dairy',
+        isLiquid,
+        unit: itemUnit,
+        isCustom: !!matchedItem.isCustom,
         matchedSnippet: seg,
         confidence: matchedItem._confidence || 0.95,
         matchType: matchedItem._matchType || 'SEMANTIC_TRANSFORMER'
@@ -481,21 +625,35 @@ export function parseVoiceCommand(transcript, catalogItems = []) {
     if (addedList.length > 0) {
       const enNames = addedList.map(i => {
         const displayName = getEnglishName(i.item) || i.item.name;
-        const unitStr = i.isLiquid
-          ? `${i.qty}L`
-          : (i.qty >= 1 ? `${i.qty} kg` : `${Math.round(i.qty * 1000)}g`);
+        let unitStr = '';
+        if (i.unit === 'packet') {
+          unitStr = `${i.qty} pkt${i.qty > 1 ? 's' : ''}`;
+        } else if (i.unit === 'bunch') {
+          unitStr = `${i.qty} bunch${i.qty > 1 ? 'es' : ''}`;
+        } else if (i.unit === 'piece') {
+          unitStr = `${i.qty} piece${i.qty > 1 ? 's' : ''}`;
+        } else if (i.isLiquid) {
+          unitStr = `${i.qty} L`;
+        } else {
+          unitStr = i.qty >= 1 ? `${i.qty} kg` : `${Math.round(i.qty * 1000)} g`;
+        }
         return `${unitStr} ${displayName}`;
       }).join(', ');
-      const taNames = addedList.map(i => `${i.qty} கிலோ ${i.item.name_ta || i.item.name}`).join(', ');
-      feedbackParts.push(`Added ${enNames}`);
-      feedbackPartsTa.push(`${taNames} சேர்க்கப்பட்டது`);
+
+      const taNames = addedList.map(i => {
+        const taUnit = i.isLiquid ? 'லிட்டர்' : (i.unit === 'packet' ? 'பாக்கெட்' : 'கிலோ');
+        return `${i.qty} ${taUnit} ${i.item.name_ta || i.item.name}`;
+      }).join(', ');
+
+      feedbackParts.push(`Added ${enNames} directly to your list`);
+      feedbackPartsTa.push(`${taNames} உங்கள் பட்டியலில் நேரடியாக சேர்க்கப்பட்டது`);
     }
 
     if (removedList.length > 0) {
       const enRem = removedList.map(i => getEnglishName(i.item) || i.item.name).join(', ');
       const taRem = removedList.map(i => i.item.name_ta || i.item.name).join(', ');
-      feedbackParts.push(`Removed ${enRem}`);
-      feedbackPartsTa.push(`${taRem} நீக்கப்பட்டது`);
+      feedbackParts.push(`Removed ${enRem} from list`);
+      feedbackPartsTa.push(`${taRem} பட்டியலிலிருந்து நீக்கப்பட்டது`);
     }
 
     return {
@@ -510,8 +668,8 @@ export function parseVoiceCommand(transcript, catalogItems = []) {
   return {
     action: 'UNKNOWN',
     items: [],
-    feedbackText: `I heard: "${transcript}", but couldn't identify the items. Try saying "Add 1kg Tomato and 500g Onion".`,
-    feedbackTamil: `தயவுசெய்து "1 கிலோ தக்காளி மற்றும் அரை கிலோ வெங்காயம் சேர்" என்று சொல்லுங்கள்.`,
+    feedbackText: `I heard: "${transcript}", but couldn't identify the product details. Try saying "Add 2kg Tomato and 1kg Onion".`,
+    feedbackTamil: `தயவுசெய்து "2 கிலோ தக்காளி மற்றும் 1 கிலோ வெங்காயம் சேர்" என்று சொல்லுங்கள்.`,
     rawText: transcript
   };
 }
