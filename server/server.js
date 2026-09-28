@@ -151,32 +151,31 @@ async function initDB() {
       console.warn('⚠️ Grocery seed notice:', gErr.message);
     }
 
-    // 5. Ensure Dairy items are seeded if dairy count is 0
+    // 5. Ensure all Dairy items are seeded
     try {
-      const dairyRes = await db.query("SELECT COUNT(*) FROM items WHERE category = 'dairy'");
-      if (parseInt(dairyRes.rows[0].count) === 0) {
-        console.log('🥛 Seeding missing Dairy items...');
-        const DAIRY_ITEMS = [
-          { name: 'Paal',              name_ta: 'பால்',               emoji: '🥛', price_per_kg: 50.00 },
-          { name: 'Thayir',            name_ta: 'தயிர்',              emoji: '🥣', price_per_kg: 40.00 },
-          { name: 'Mor',               name_ta: 'மோர்',               emoji: '🥛', price_per_kg: 25.00 },
-          { name: 'Vennai',            name_ta: 'வெண்ணெய்',           emoji: '🧈', price_per_kg: 480.00 },
-          { name: 'Nei',               name_ta: 'நெய்',               emoji: '🧈', price_per_kg: 550.00 },
-          { name: 'Paneer',            name_ta: 'பன்னீர்',            emoji: '🧀', price_per_kg: 350.00 },
-          { name: 'Cheese',            name_ta: 'சீஸ்',               emoji: '🧀', price_per_kg: 450.00 },
-          { name: 'Cream',             name_ta: 'கிரீம்',             emoji: '🥛', price_per_kg: 200.00 },
-          { name: 'Condensed Paal',    name_ta: 'கண்டென்ஸ்டு மில்க்',  emoji: '🥫', price_per_kg: 160.00 },
-          { name: 'Paal Pavadar',      name_ta: 'பால் பவுடர்',         emoji: '🥛', price_per_kg: 300.00 },
-        ];
-        for (const d of DAIRY_ITEMS) {
+      const DAIRY_ITEMS = [
+        { name: 'Paal',              name_ta: 'பால்',               emoji: '🥛', price_per_kg: 50.00 },
+        { name: 'Thayir',            name_ta: 'தயிர்',              emoji: '🥣', price_per_kg: 40.00 },
+        { name: 'Mor',               name_ta: 'மோர்',               emoji: '🥛', price_per_kg: 25.00 },
+        { name: 'Vennai',            name_ta: 'வெண்ணெய்',           emoji: '🧈', price_per_kg: 480.00 },
+        { name: 'Nei',               name_ta: 'நெய்',               emoji: '🧈', price_per_kg: 550.00 },
+        { name: 'Paneer',            name_ta: 'பன்னீர்',            emoji: '🧀', price_per_kg: 350.00 },
+        { name: 'Cheese',            name_ta: 'சீஸ்',               emoji: '🧀', price_per_kg: 450.00 },
+        { name: 'Cream',             name_ta: 'கிரீம்',             emoji: '🥛', price_per_kg: 200.00 },
+        { name: 'Condensed Milk',    name_ta: 'கண்டென்ஸ்டு மில்க்',  emoji: '🥫', price_per_kg: 160.00 },
+        { name: 'Milk Powder',       name_ta: 'பால் பவுடர்',         emoji: '🥛', price_per_kg: 300.00 },
+      ];
+      for (const d of DAIRY_ITEMS) {
+        const exist = await db.query("SELECT id FROM items WHERE LOWER(name) = LOWER($1) OR name_ta = $2", [d.name, d.name_ta]);
+        if (exist.rows.length === 0) {
           await db.query(
             `INSERT INTO items (name, name_ta, category, price_per_kg, emoji, is_active)
              VALUES ($1, $2, 'dairy', $3, $4, true)`,
             [d.name, d.name_ta, d.price_per_kg, d.emoji]
           );
         }
-        console.log('✅ Dairy items seeded successfully!');
       }
+      console.log('✅ Dairy items verified and up to date!');
     } catch (dErr) {
       console.warn('⚠️ Dairy seed notice:', dErr.message);
     }

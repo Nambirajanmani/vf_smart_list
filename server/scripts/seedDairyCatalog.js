@@ -17,8 +17,8 @@ const DAIRY_ITEMS = [
   { name: 'Paneer',            name_ta: 'பன்னீர்',            emoji: '🧀', price_per_kg: 350.00 },
   { name: 'Cheese',            name_ta: 'சீஸ்',               emoji: '🧀', price_per_kg: 450.00 },
   { name: 'Cream',             name_ta: 'கிரீம்',             emoji: '🥛', price_per_kg: 200.00 },
-  { name: 'Condensed Paal',    name_ta: 'கண்டென்ஸ்டு மில்க்',  emoji: '🥫', price_per_kg: 160.00 },
-  { name: 'Paal Pavadar',      name_ta: 'பால் பவுடர்',         emoji: '🥛', price_per_kg: 300.00 },
+  { name: 'Condensed Milk',    name_ta: 'கண்டென்ஸ்டு மில்க்',  emoji: '🥫', price_per_kg: 160.00 },
+  { name: 'Milk Powder',       name_ta: 'பால் பவுடர்',         emoji: '🥛', price_per_kg: 300.00 },
 ];
 
 async function seedDairy() {

@@ -215,6 +215,12 @@ const DEFAULT_ITEMS = [
   { id: 161, name: 'Biryani Masala',        name_ta: 'பிரியாணி மசாலா',        category: 'grocery', price_per_kg: 350.00, emoji: '🍛', is_active: true },
 
   // Dairy (10)
+  { id: 168, name: 'Paal',                   name_ta: 'பால்',                  category: 'dairy', price_per_kg: 50.00,  emoji: '🥛', is_active: true },
+  { id: 169, name: 'Thayir',                 name_ta: 'தயிர்',                 category: 'dairy', price_per_kg: 40.00,  emoji: '🥣', is_active: true },
+  { id: 170, name: 'Mor',                    name_ta: 'மோர்',                  category: 'dairy', price_per_kg: 25.00,  emoji: '🥛', is_active: true },
+  { id: 171, name: 'Vennai',                 name_ta: 'வெண்ணெய்',              category: 'dairy', price_per_kg: 480.00, emoji: '🧈', is_active: true },
+  { id: 172, name: 'Nei',                    name_ta: 'நெய்',                  category: 'dairy', price_per_kg: 550.00, emoji: '🧈', is_active: true },
+  { id: 173, name: 'Paneer',                 name_ta: 'பன்னீர்',               category: 'dairy', price_per_kg: 350.00, emoji: '🧀', is_active: true },
   { id: 174, name: 'Cheese',                 name_ta: 'சீஸ்',                  category: 'dairy', price_per_kg: 450.00, emoji: '🧀', is_active: true },
   { id: 175, name: 'Cream',                  name_ta: 'கிரீம்',                category: 'dairy', price_per_kg: 200.00, emoji: '🥛', is_active: true },
   { id: 176, name: 'Condensed Milk',         name_ta: 'கண்டென்ஸ்டு மில்க்',     category: 'dairy', price_per_kg: 160.00, emoji: '🥫', is_active: true },
