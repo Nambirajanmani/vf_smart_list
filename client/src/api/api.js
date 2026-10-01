@@ -1,6 +1,11 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://vf-smart-list.onrender.com/api';
+let baseUrl = import.meta.env.VITE_API_URL || 'https://vf-smart-list.onrender.com/api';
+if (import.meta.env.PROD && baseUrl.includes('localhost')) {
+  baseUrl = 'https://vf-smart-list.onrender.com/api';
+}
+
+const API_BASE_URL = baseUrl;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
