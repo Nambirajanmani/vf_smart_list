@@ -14,7 +14,7 @@ const DOMAIN_SYNONYMS = {
   // Vegetables
   'tomato': ['tomato', 'tomatoes', 'thakkali', 'dhakkali', 'takali', 'தக்காளி', 'tamatar'],
   'potato': ['potato', 'potatoes', 'urulai', 'urulaikizhangu', 'urulaikilangu', 'உருளைக்கிழங்கு', 'aloo', 'alu', 'batata'],
-  'onion': ['onion', 'onions', 'vengayam', 'vengaayam', 'வெங்காயம்', 'pyaz', 'kanda'],
+  'onion': ['onion', 'onions', 'vengayam', 'vengaayam', 'வெங்காயம்', 'pyaz', 'kanda', 'ballari', 'pallari', 'ballari onion', 'பல்லாரி', 'பல்லாரி வெங்காயம்'],
   'shallots': ['shallots', 'small onion', 'chinna vengayam', 'சின்ன வெங்காயம்', 'sambar onion'],
   'garlic': ['garlic', 'poondu', 'பூண்டு', 'lahsun', 'lasun'],
   'ginger': ['ginger', 'inji', 'இஞ்சி', 'adrak'],
@@ -230,7 +230,11 @@ function getProductProfile(item) {
   // Find all domain synonyms that match this item
   const aliases = new Set([enName, dbName, taName, tanglishName]);
   for (const [key, synList] of Object.entries(DOMAIN_SYNONYMS)) {
-    if (enName.includes(key) || dbName.includes(key) || tanglishName.includes(key)) {
+    // Only map domain synonyms if key is exact match or primary name
+    if (enName === key || dbName === key || tanglishName === key || taName === key) {
+      synList.forEach(s => aliases.add(s.toLowerCase()));
+    } else if ((enName.includes(key) || dbName.includes(key)) && key.includes(' ')) {
+      // Multi-word keys like "condensed milk" or "basmati rice"
       synList.forEach(s => aliases.add(s.toLowerCase()));
     }
   }
@@ -268,10 +272,9 @@ export function findMatchingProductWithTransformer(rawCandidate, catalogItems = 
   let bestScore = -1;
   let matchType = 'NONE';
 
+  // ── Phase 1: High-Priority Exact Match Check ────────────────────────
   for (const item of catalogItems) {
     const profile = getProductProfile(item);
-
-    // ── Phase 1: Exact & Direct Match (Score = 1.0) ──────────────
     if (
       queryTokens === profile.enName ||
       queryTokens === profile.dbName ||
@@ -285,23 +288,41 @@ export function findMatchingProductWithTransformer(rawCandidate, catalogItems = 
         matchType: 'EXACT'
       };
     }
+    for (const alias of profile.aliases) {
+      if (queryTokens === alias && (alias === profile.enName || alias === profile.dbName || alias === profile.tanglishName || alias === profile.taName)) {
+        return {
+          item,
+          score: 0.98,
+          confidence: 0.98,
+          matchType: 'EXACT_ALIAS'
+        };
+      }
+    }
+  }
 
-    // ── Phase 2: Direct Alias / Synonym Match ────────────────────
+  for (const item of catalogItems) {
+    const profile = getProductProfile(item);
+
+    // ── Phase 2: Direct Alias / Synonym Match with Specificity Reranking ──
     let aliasScore = 0;
     for (const alias of profile.aliases) {
       if (queryTokens === alias) {
-        aliasScore = 0.96;
+        // Penalize composite item names if query is short single word
+        const isCompositeItem = profile.dbName.includes(' ') || profile.enName.includes(' ');
+        const isQuerySingleWord = !queryTokens.includes(' ');
+        aliasScore = isCompositeItem && isQuerySingleWord ? 0.75 : 0.95;
         break;
       }
       if (queryTokens.includes(alias) || alias.includes(queryTokens)) {
         if (alias.length >= 3 && queryTokens.length >= 3) {
-          aliasScore = Math.max(aliasScore, 0.88);
+          const isCompositeItem = profile.dbName.includes(' ') || profile.enName.includes(' ');
+          aliasScore = Math.max(aliasScore, isCompositeItem ? 0.70 : 0.85);
         }
       }
       // Phonetic Levenshtein check for minor speech recognition spelling errors
       const editSim = levenshteinSimilarity(queryTokens, alias);
       if (editSim >= 0.80) {
-        aliasScore = Math.max(aliasScore, editSim * 0.92);
+        aliasScore = Math.max(aliasScore, editSim * 0.90);
       }
     }
 

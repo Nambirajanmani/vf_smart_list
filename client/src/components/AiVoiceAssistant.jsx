@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { parseVoiceCommand } from '../utils/voiceParser.js';
+import { parseVoiceCommand, dedupeSpokenWords } from '../utils/voiceParser.js';
 import { getTanglishName, getEnglishName } from '../utils/tanglish.js';
 import api from '../api/api.js';
 import {
@@ -61,6 +61,7 @@ export default function AiVoiceAssistant({
 
   const recognitionRef = useRef(null);
   const finalTranscriptAccumulator = useRef('');
+  const interimTextRef = useRef('');
   const chatBottomRef = useRef(null);
   const autoListenRef = useRef(autoListen);
   autoListenRef.current = autoListen;
@@ -99,17 +100,23 @@ export default function AiVoiceAssistant({
     };
 
     rec.onresult = (event) => {
-      let interim = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
+      let finalStr = '';
+      let interimStr = '';
+      for (let i = 0; i < event.results.length; i++) {
         const item = event.results[i];
         if (item.isFinal) {
-          finalTranscriptAccumulator.current += ' ' + item[0].transcript;
-          setTranscript(finalTranscriptAccumulator.current.trim());
+          finalStr += ' ' + item[0].transcript;
         } else {
-          interim += item[0].transcript;
+          interimStr += ' ' + item[0].transcript;
         }
       }
-      setInterimText(interim);
+      const cleanFinal = dedupeSpokenWords(finalStr);
+      const cleanInterim = dedupeSpokenWords(interimStr);
+
+      finalTranscriptAccumulator.current = cleanFinal;
+      interimTextRef.current = cleanInterim;
+      setTranscript(cleanFinal);
+      setInterimText(cleanInterim);
     };
 
     rec.onerror = (event) => {
@@ -134,6 +141,7 @@ export default function AiVoiceAssistant({
 
     rec.onend = () => {
       setIsListening(false);
+      interimTextRef.current = '';
       setInterimText('');
     };
 
@@ -159,6 +167,7 @@ export default function AiVoiceAssistant({
     stopListening();
     stopSpeaking();
     setIsOpen(false);
+    interimTextRef.current = '';
     setInterimText('');
   };
 
@@ -171,7 +180,13 @@ export default function AiVoiceAssistant({
 
     if (isListening) {
       stopListening();
-      const currentFullText = (finalTranscriptAccumulator.current + ' ' + interimText).trim();
+      const finalPart = finalTranscriptAccumulator.current.trim();
+      const interimPart = interimTextRef.current.trim();
+      let combined = finalPart;
+      if (interimPart && !finalPart.toLowerCase().endsWith(interimPart.toLowerCase())) {
+        combined = (finalPart + ' ' + interimPart).trim();
+      }
+      const currentFullText = dedupeSpokenWords(combined);
       if (currentFullText) {
         executeCommand(currentFullText, true);
       }
@@ -183,6 +198,7 @@ export default function AiVoiceAssistant({
   const startListening = () => {
     if (!recognitionRef.current) return;
     finalTranscriptAccumulator.current = '';
+    interimTextRef.current = '';
     setTranscript('');
     setInterimText('');
     stopSpeaking();

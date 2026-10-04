@@ -19,14 +19,14 @@ const TAMIL_QTY_MAP = [
   { words: ['ஒன்றரை லிட்டர்', 'ஒன்னரை லிட்டர்', '1.5 லிட்டர்', 'ondrarai liter'], qty: 1.5, isLiquid: true },
   { words: ['ரெண்டரை லிட்டர்', 'இரண்டரை லிட்டர்', '2.5 லிட்டர்', 'rendara liter'], qty: 2.5, isLiquid: true },
   // Standard fractions and wholes
-  { words: ['ஒரு கிலோ', 'ஒன்னு கிலோ', '1 கிலோ', 'ஒரு', 'ஒன்னு', 'oru kilo', 'onnu kilo', 'one kilo', '1 kilo'], qty: 1.0 },
+  { words: ['ஒரு கிலோ', 'ஒன்னு கிலோ', '1 கிலோ', 'ஒரு', 'ஒன்னு', 'oru kilo', 'onnu kilo', 'one kilo', '1 kilo', 'உன் கே ஜி', 'ஒன் கே ஜி', 'ஒன் கேஜி', 'உன்கேஜி', '1 கேஜி', '1கேஜி', 'ஒன் kg', 'one kg'], qty: 1.0 },
   { words: ['அரை கிலோ', 'அர கிலோ', 'அரை', 'ara kilo', 'arai kilo', 'half kilo', 'half kg'], qty: 0.5 },
   { words: ['கால் கிலோ', 'கால்', 'kaal kilo', 'kal kilo', 'quarter kilo'], qty: 0.25 },
   { words: ['முக்கால் கிலோ', 'முக்கால்', 'mukaal kilo', 'mukkaal kilo', 'three quarters'], qty: 0.75 },
-  { words: ['இரண்டு கிலோ', 'ரெண்டு கிலோ', '2 கிலோ', 'ரெண்டு', 'rendu kilo', 'irandu kilo', 'two kilos', 'two kg'], qty: 2.0 },
-  { words: ['மூன்று கிலோ', 'மூணு கிலோ', '3 கிலோ', 'மூணு', 'moonu kilo', 'three kilos'], qty: 3.0 },
-  { words: ['நான்கு கிலோ', 'நாலு கிலோ', '4 கிலோ', 'நாலு', 'naalu kilo', 'four kilos'], qty: 4.0 },
-  { words: ['ஐந்து கிலோ', 'அஞ்சு கிலோ', '5 கிலோ', 'அஞ்சு', 'anju kilo', 'five kilos'], qty: 5.0 },
+  { words: ['இரண்டு கிலோ', 'ரெண்டு கிலோ', '2 கிலோ', 'ரெண்டு', 'rendu kilo', 'irandu kilo', 'two kilos', 'two kg', 'ரெண்டு கே ஜி', 'இரண்டு கே ஜி', '2 கேஜி', '2 கே ஜி'], qty: 2.0 },
+  { words: ['மூன்று கிலோ', 'மூணு கிலோ', '3 கிலோ', 'மூணு', 'moonu kilo', 'three kilos', 'மூணு கே ஜி', '3 கேஜி', '3 கே ஜி'], qty: 3.0 },
+  { words: ['நான்கு கிலோ', 'நாலு கிலோ', '4 கிலோ', 'நாலு', 'naalu kilo', 'four kilos', 'நாலு கே ஜி', '4 கேஜி', '4 கே ஜி'], qty: 4.0 },
+  { words: ['ஐந்து கிலோ', 'அஞ்சு கிலோ', '5 கிலோ', 'அஞ்சு', 'anju kilo', 'five kilos', 'அஞ்சு கே ஜி', '5 கேஜி', '5 கே ஜி'], qty: 5.0 },
   { words: ['பத்து கிலோ', '10 கிலோ', 'pathu kilo', 'ten kilos'], qty: 10.0 },
   // Grams
   { words: ['100 கிராம்', 'நூறு கிராம்', '100 gram', 'nooru gram'], qty: 0.1 },
@@ -63,7 +63,7 @@ const ITEM_ALIASES = {
   // Vegetables
   'tomato': ['tomato', 'tomatoes', 'thakkali', 'தக்காளி', 'dhakkali'],
   'potato': ['potato', 'potatoes', 'urulai', 'urulaikizhangu', 'urulaikilangu', 'உருளைக்கிழங்கு', 'alu', 'aloo'],
-  'onion': ['onion', 'onions', 'vengayam', 'vengayam', 'வெங்காயம்', 'pyaz'],
+  'onion': ['onion', 'onions', 'vengayam', 'vengaayam', 'வெங்காயம்', 'pyaz', 'ballari', 'pallari', 'ballari onion', 'பல்லாரி', 'பல்லாரி வெங்காயம்'],
   'shallots': ['shallots', 'small onion', 'chinna vengayam', 'சின்ன வெங்காயம்', 'sambar onion'],
   'garlic': ['garlic', 'poondu', 'பூண்டு', 'lahsun'],
   'ginger': ['ginger', 'inji', 'இஞ்சி', 'adrak'],
@@ -155,6 +155,25 @@ export function normalizeText(text) {
     .replace(/[!?;:()[\]{}'"]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+/**
+ * Collapses consecutive duplicated words or phrases.
+ * E.g., "tomato tomato" -> "tomato", "1kg 1kg" -> "1kg", "தக்காளி தக்காளி" -> "தக்காளி"
+ */
+export function dedupeSpokenWords(text) {
+  if (!text || typeof text !== 'string') return '';
+  const tokens = text.trim().split(/\s+/);
+  const result = [];
+  for (let i = 0; i < tokens.length; i++) {
+    const curr = tokens[i].toLowerCase().replace(/[!?;:()[\]{}'"]/g, '');
+    const prev = result.length > 0 ? result[result.length - 1].toLowerCase().replace(/[!?;:()[\]{}'"]/g, '') : null;
+    if (curr && curr === prev) {
+      continue;
+    }
+    result.push(tokens[i]);
+  }
+  return result.join(' ');
 }
 
 /**
@@ -411,6 +430,173 @@ export function findMatchingItem(term, catalogItems) {
 }
 
 /**
+ * Detects all quantity match ranges inside a text snippet.
+ */
+export function findQuantityRanges(text) {
+  if (!text) return [];
+  const norm = text.toLowerCase();
+  const ranges = [];
+
+  const addRange = (start, end, matchedStr) => {
+    const overlap = ranges.some(r => !(end <= r.start || start >= r.end));
+    if (!overlap) {
+      ranges.push({ start, end, matchedStr });
+    }
+  };
+
+  // 1. Compound numeric regex: "1 kg 500 grams", "2 kg 250 g"
+  const compoundRegex = /(\d+(?:\.\d+)?)\s*(?:kg|kilo|kilos|கிலோ)\s*(?:and\s+)?(\d+(?:\.\d+)?)\s*(?:grams?|gm|g|கிராம்)/gi;
+  let m;
+  while ((m = compoundRegex.exec(text)) !== null) {
+    addRange(m.index, m.index + m[0].length, m[0]);
+  }
+
+  // 2. Tamil compound regex: "(ஒரு|1|2|3) கிலோ (500) கிராம்"
+  const tamilCompoundRegex = /(?:ஒரு|1|இரண்டு|ரெண்டு|2|மூன்று|மூணு|3)\s*கிலோ\s*\d+\s*கிராம்/gi;
+  while ((m = tamilCompoundRegex.exec(text)) !== null) {
+    addRange(m.index, m.index + m[0].length, m[0]);
+  }
+
+  // 3. Numeric unit regex: "1kg", "500g", "2.5 kilos", "1 liter", "250 ml", "2 packets", "1 bunch", "2 pcs"
+  const numUnitRegex = /\b(\d+(?:\.\d+)?)\s*(?:kg|kilo|kilos|kgs|கிலோ|grams?|gm|g|கிராம்|liter|liters|litres|l|ltr|லிட்டர்|ml|மில்லி|packets?|pkts?|pkt|பாக்கெட்|bunches?|bunch|கட்டு|pieces?|pcs?|nos)\b/gi;
+  while ((m = numUnitRegex.exec(text)) !== null) {
+    addRange(m.index, m.index + m[0].length, m[0]);
+  }
+
+  // 4. Tamil & Tanglish quantity phrase map matches
+  for (const item of TAMIL_QTY_MAP) {
+    for (const w of item.words) {
+      const lowerW = w.toLowerCase();
+      let pos = 0;
+      while ((pos = norm.indexOf(lowerW, pos)) !== -1) {
+        addRange(pos, pos + w.length, w);
+        pos += w.length;
+      }
+    }
+  }
+
+  ranges.sort((a, b) => a.start - b.start);
+  return ranges;
+}
+
+/**
+ * Detects all known catalog product match ranges inside a text snippet.
+ */
+export function findKnownProductRanges(text, catalogItems = []) {
+  if (!text) return [];
+  const norm = text.toLowerCase();
+  const ranges = [];
+
+  const addRange = (start, end, name) => {
+    const overlap = ranges.some(r => !(end <= r.start || start >= r.end));
+    if (!overlap) {
+      ranges.push({ start, end, name });
+    }
+  };
+
+  // Check ITEM_ALIASES
+  for (const [key, aliases] of Object.entries(ITEM_ALIASES)) {
+    for (const alias of aliases) {
+      if (alias.length < 3) continue;
+      const lowerAlias = alias.toLowerCase();
+      let pos = 0;
+      while ((pos = norm.indexOf(lowerAlias, pos)) !== -1) {
+        addRange(pos, pos + alias.length, alias);
+        pos += alias.length;
+      }
+    }
+  }
+
+  // Check catalog items names
+  for (const item of catalogItems) {
+    const en = (item.name || '').toLowerCase();
+    const ta = (item.name_ta || '').toLowerCase();
+    const tg = (getTanglishName(item) || '').toLowerCase();
+
+    [en, ta, tg].forEach(str => {
+      if (str && str.length >= 3) {
+        let pos = 0;
+        while ((pos = norm.indexOf(str, pos)) !== -1) {
+          addRange(pos, pos + str.length, str);
+          pos += str.length;
+        }
+      }
+    });
+  }
+
+  ranges.sort((a, b) => a.start - b.start);
+  return ranges;
+}
+
+/**
+ * Intelligently splits a continuous natural language transcript into individual product item segments.
+ */
+export function splitMultiItemUtterance(transcript, catalogItems = []) {
+  if (!transcript || typeof transcript !== 'string') return [];
+  const text = transcript.trim();
+  if (!text) return [];
+
+  // Initial split on explicit conjunctions, commas, line breaks
+  const rawParts = text
+    .split(/\b(?:and|plus|also|with|மற்றும்|அப்புறம்|கூட|மேலும்)\b|,|\n|;/i)
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  const resultSegments = [];
+
+  for (const part of rawParts) {
+    const qtyRanges = findQuantityRanges(part);
+
+    if (qtyRanges.length > 1) {
+      const firstStart = qtyRanges[0].start;
+
+      if (firstStart <= 5) {
+        // Quantities are near start of items (e.g. "1kg tomato 2kg onion 500g butter", "உன் கே ஜி தக்காளி ஒரு கிலோ பல்லாரி ஒரு கிலோ இஞ்சி")
+        for (let i = 0; i < qtyRanges.length; i++) {
+          const start = (i === 0) ? 0 : qtyRanges[i].start;
+          const next = qtyRanges[i + 1];
+          const end = next ? next.start : part.length;
+
+          const segText = part.substring(start, end).trim();
+          if (segText) resultSegments.push(segText);
+        }
+      } else {
+        // Quantities come after item names (e.g. "tomato 1kg onion 2kg")
+        for (let i = 0; i < qtyRanges.length; i++) {
+          const start = (i === 0) ? 0 : qtyRanges[i - 1].end;
+          const end = qtyRanges[i].end;
+
+          const segText = part.substring(start, end).trim();
+          if (segText) resultSegments.push(segText);
+        }
+        const lastEnd = qtyRanges[qtyRanges.length - 1].end;
+        if (lastEnd < part.length) {
+          const rem = part.substring(lastEnd).trim();
+          if (rem) resultSegments.push(rem);
+        }
+      }
+    } else {
+      // 0 or 1 quantity range found. Check if multiple known products are spoken without explicit quantities
+      const productRanges = findKnownProductRanges(part, catalogItems);
+      if (qtyRanges.length === 0 && productRanges.length > 1) {
+        for (let i = 0; i < productRanges.length; i++) {
+          const start = productRanges[i].start;
+          const next = productRanges[i + 1];
+          const end = next ? next.start : part.length;
+
+          const segText = part.substring(start, end).trim();
+          if (segText) resultSegments.push(segText);
+        }
+      } else {
+        resultSegments.push(part);
+      }
+    }
+  }
+
+  return resultSegments.length > 0 ? resultSegments : [text];
+}
+
+/**
  * Main Voice/Text NLP Command Parser.
  * Takes a raw transcript and the catalog items, returns an action object:
  * {
@@ -426,7 +612,8 @@ export function parseVoiceCommand(transcript, catalogItems = []) {
     return { action: 'UNKNOWN', items: [], rawText: '' };
   }
 
-  const norm = normalizeText(transcript);
+  const cleanedTranscript = dedupeSpokenWords(transcript);
+  const norm = normalizeText(cleanedTranscript);
 
   // ── Global System Commands ─────────────────────────────────
   // 1. Clear shopping list
@@ -516,12 +703,8 @@ export function parseVoiceCommand(transcript, catalogItems = []) {
   }
 
   // ── Item Parsing (Multi-item support) ───────────────────────
-  // Split transcript into item segments using separators like:
-  // "and", "plus", ",", "மற்றும்", "அப்புறம்", "கூட"
-  const segments = transcript
-    .split(/\b(?:and|plus|also|with|மற்றும்|அப்புறம்|கூட|மேலும்)\b|,|\n/i)
-    .map(s => s.trim())
-    .filter(s => s.length > 0);
+  // Split transcript intelligently into item segments
+  const segments = splitMultiItemUtterance(cleanedTranscript, catalogItems);
 
   const parsedItems = [];
   const isRemoveGlobal = norm.startsWith('remove') || norm.startsWith('delete') || norm.includes('நீக்கு');

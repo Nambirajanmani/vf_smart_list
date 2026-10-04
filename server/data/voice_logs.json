@@ -24,5 +24,245 @@
       }
     ],
     "user_accepted": true
+  },
+  {
+    "id": 1791028919388,
+    "timestamp": "2026-10-03T12:01:59.388Z",
+    "utterance": "1 kg takli",
+    "lang": "en",
+    "action": "ADD_OR_UPDATE",
+    "matchedItems": [
+      {
+        "id": 25,
+        "name": "Thakkali",
+        "english": "Tomato",
+        "qty": 1,
+        "confidence": 0.76,
+        "matchType": "SYNONYM_PHONETIC"
+      }
+    ],
+    "user_accepted": true
+  },
+  {
+    "id": 1791029051981,
+    "timestamp": "2026-10-03T12:04:11.981Z",
+    "utterance": "ஒரு கிலோ தக்காளி ஒரு கிலோ மில்க் 1 kg வாட்டர் மேன்",
+    "lang": "ta",
+    "action": "ADD_OR_UPDATE",
+    "matchedItems": [
+      {
+        "id": 25,
+        "name": "Thakkali",
+        "english": "Tomato",
+        "qty": 1,
+        "confidence": 0.86,
+        "matchType": "SYNONYM_PHONETIC"
+      }
+    ],
+    "user_accepted": true
+  },
+  {
+    "id": 1791029102745,
+    "timestamp": "2026-10-03T12:05:02.745Z",
+    "utterance": "உன் கே ஜி தக்காளி ஒரு கிலோ பல்லாரி ஒரு கிலோ இஞ்சி",
+    "lang": "ta",
+    "action": "ADD_OR_UPDATE",
+    "matchedItems": [
+      {
+        "id": 29,
+        "name": "Inji",
+        "english": "Ginger",
+        "qty": 1,
+        "confidence": 0.86,
+        "matchType": "SYNONYM_PHONETIC"
+      }
+    ],
+    "user_accepted": true
+  },
+  {
+    "id": 1791031744948,
+    "timestamp": "2026-10-03T12:49:04.948Z",
+    "utterance": "Unki Jeet Kali 1 kg thakkali 1 kg onion 1 kg potato",
+    "lang": "en",
+    "action": "ADD_OR_UPDATE",
+    "matchedItems": [
+      {
+        "id": "voice_unki_jeet_kali_43546",
+        "name": "Unki Jeet Kali",
+        "english": "Unki Jeet Kali",
+        "qty": 1,
+        "confidence": 0.88,
+        "matchType": "AI_DYNAMIC_RECOGNITION"
+      },
+      {
+        "id": 25,
+        "name": "Thakkali",
+        "english": "Tomato",
+        "qty": 1,
+        "confidence": 0.99,
+        "matchType": "EXACT"
+      },
+      {
+        "id": 27,
+        "name": "Vengayam",
+        "english": "Onion",
+        "qty": 1,
+        "confidence": 0.99,
+        "matchType": "EXACT"
+      },
+      {
+        "id": 26,
+        "name": "Urulaikizhangu",
+        "english": "Potato",
+        "qty": 1,
+        "confidence": 0.99,
+        "matchType": "EXACT"
+      }
+    ],
+    "user_accepted": true
+  },
+  {
+    "id": 1791031901460,
+    "timestamp": "2026-10-03T12:51:41.460Z",
+    "utterance": "Unki takli 1 kg thakkali remove one kg the Kali add 1 kg potato",
+    "lang": "en",
+    "action": "ADD_OR_UPDATE",
+    "matchedItems": [
+      {
+        "id": "voice_unki_jeet_kali_43546",
+        "name": "Unki Jeet Kali",
+        "english": "Unki Jeet Kali",
+        "qty": 1,
+        "confidence": 0.49,
+        "matchType": "SEMANTIC_TRANSFORMER"
+      },
+      {
+        "id": 25,
+        "name": "Thakkali",
+        "english": "Tomato",
+        "qty": 1,
+        "confidence": 0.53,
+        "matchType": "SEMANTIC_TRANSFORMER"
+      },
+      {
+        "id": 26,
+        "name": "Urulaikizhangu",
+        "english": "Potato",
+        "qty": 1,
+        "confidence": 0.99,
+        "matchType": "EXACT"
+      }
+    ],
+    "user_accepted": true
+  },
+  {
+    "id": 1791031944325,
+    "timestamp": "2026-10-03T12:52:24.325Z",
+    "utterance": "add Kali 1 kg potato 1 kg tomato 1 kg onion kg 1 kg watermelon 1 kg",
+    "lang": "en",
+    "action": "ADD_OR_UPDATE",
+    "matchedItems": [
+      {
+        "id": 25,
+        "name": "Thakkali",
+        "english": "Tomato",
+        "qty": 1,
+        "confidence": 0.99,
+        "matchType": "EXACT"
+      },
+      {
+        "id": 26,
+        "name": "Urulaikizhangu",
+        "english": "Potato",
+        "qty": 1,
+        "confidence": 0.99,
+        "matchType": "EXACT"
+      },
+      {
+        "id": 27,
+        "name": "Vengayam",
+        "english": "Onion",
+        "qty": 1,
+        "confidence": 0.99,
+        "matchType": "EXACT"
+      },
+      {
+        "id": 79,
+        "name": "Tharboosani",
+        "english": "Watermelon",
+        "qty": 1,
+        "confidence": 0.99,
+        "matchType": "EXACT"
+      }
+    ],
+    "user_accepted": true
+  },
+  {
+    "id": 1791093902307,
+    "timestamp": "2026-10-04T06:05:02.307Z",
+    "utterance": "unke jite Kali 1 kg thakkali remove 1 kg the Kali A1 kg potato",
+    "lang": "en",
+    "action": "ADD_OR_UPDATE",
+    "matchedItems": [
+      {
+        "id": "voice_unke_jite_kali_656",
+        "name": "Unke Jite Kali",
+        "english": "Unke Jite Kali",
+        "qty": 1,
+        "confidence": 0.88,
+        "matchType": "AI_DYNAMIC_RECOGNITION"
+      },
+      {
+        "id": 25,
+        "name": "Thakkali",
+        "english": "Tomato",
+        "qty": 1,
+        "confidence": 0.99,
+        "matchType": "EXACT"
+      },
+      {
+        "id": 26,
+        "name": "Urulaikizhangu",
+        "english": "Potato",
+        "qty": 1,
+        "confidence": 0.86,
+        "matchType": "SYNONYM_PHONETIC"
+      }
+    ],
+    "user_accepted": true
+  },
+  {
+    "id": 1791093946109,
+    "timestamp": "2026-10-04T06:05:46.109Z",
+    "utterance": "owner of KG thakkali brinjal one and half kg",
+    "lang": "en",
+    "action": "ADD_OR_UPDATE",
+    "matchedItems": [
+      {
+        "id": 25,
+        "name": "Thakkali",
+        "english": "Tomato",
+        "qty": 1,
+        "confidence": 0.99,
+        "matchType": "EXACT"
+      },
+      {
+        "id": 38,
+        "name": "Kathirikkai",
+        "english": "Brinjal",
+        "qty": 1,
+        "confidence": 0.86,
+        "matchType": "SYNONYM_PHONETIC"
+      },
+      {
+        "id": "voice_half_kg_45528",
+        "name": "Half Kg",
+        "english": "Half Kg",
+        "qty": 0.5,
+        "confidence": 0.88,
+        "matchType": "AI_DYNAMIC_RECOGNITION"
+      }
+    ],
+    "user_accepted": true
   }
 ]
